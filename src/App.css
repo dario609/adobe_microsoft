@@ -85,6 +85,7 @@
   flex-shrink: 0;
   width: 100%;
   max-width: var(--editor-boundary-max);
+  margin-inline: auto;
   box-sizing: border-box;
 }
 
@@ -182,6 +183,7 @@
   min-height: 52px;
   width: 100%;
   max-width: var(--editor-boundary-max);
+  margin-inline: auto;
   box-sizing: border-box;
   padding: max(10px, env(safe-area-inset-top)) 0 10px;
   border-bottom: 1px solid var(--border);
@@ -340,9 +342,10 @@
   /* flex-basis 0% + grow: reliably consume all space below header/toast (no dead band) */
   flex: 1 1 0%;
   min-height: 0;
-  align-self: stretch;
+  /* Stay centered like .sessionHeader (do not align-self: stretch — that full-bleeds vs header) */
   width: 100%;
   max-width: var(--editor-boundary-max);
+  margin-inline: auto;
   display: flex;
   flex-direction: column;
   padding: 8px 0 0;
@@ -413,25 +416,24 @@
   visibility: visible;
   pointer-events: auto;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
 }
 
-/*
- * CC Everywhere mounts a wrapper + iframe; flex height often does not propagate into the iframe.
- * Pin the iframe to the host box so no near-black host background shows as an empty band (dark mode).
- */
-/* SDK root: fill host so iframe’s containing block is full height (not a collapsed wrapper) */
+/* CC Everywhere: flex chain fills host; absolute iframe broke embed layout/centering */
 .microsite__editor--visible > * {
-  height: 100%;
-  min-height: 100%;
-  box-sizing: border-box;
-  position: relative;
+  flex: 1 1 0%;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .microsite__editor--visible iframe {
-  position: absolute;
-  inset: 0;
+  flex: 1 1 0%;
+  min-height: 0;
   width: 100%;
-  height: 100%;
   border: 0;
   display: block;
 }
