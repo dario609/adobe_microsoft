@@ -2,6 +2,9 @@
 :root {
   /* Centered “boundary” column — not edge-to-edge (matches kiosk-style reference). */
   --editor-boundary-max: min(1180px, calc(100vw - 2.5rem));
+  /* Thick rainbow ring around the Express host (gradient = padding). */
+  --editor-rainbow-border: 22px;
+  --editor-frame-outer-radius: 40px;
 }
 
 @media (max-width: 480px) {
@@ -25,6 +28,10 @@
 .appRoot--editing {
   /* Visible gutters around the framed editor (not flat full-bleed). */
   background: linear-gradient(165deg, #f8f7ff 0%, #f3edff 35%, #ebe4ff 70%, #e8f4fc 100%);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -56,12 +63,13 @@
 .shell--editing {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 1 1 0%;
   min-height: 0;
   width: 100%;
   max-width: none;
   margin: 0;
-  padding: 0 max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom))
+  /* Only horizontal gutters + safe bottom inset — avoid a large empty band under the editor */
+  padding: 0 max(16px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom))
     max(16px, env(safe-area-inset-left));
   text-align: left;
   align-items: center;
@@ -329,30 +337,31 @@
 
 /* ——— Editor: themed frame inside centered boundary (not full viewport width) ——— */
 .editorShell {
-  flex: 1 1 auto;
+  /* flex-basis 0% + grow: reliably consume all space below header/toast (no dead band) */
+  flex: 1 1 0%;
   min-height: 0;
   width: 100%;
   max-width: var(--editor-boundary-max);
   display: flex;
   flex-direction: column;
-  padding: 12px 0 0;
+  padding: 8px 0 0;
   box-sizing: border-box;
 }
 
 .editorStage {
-  flex: 1 1 auto;
+  flex: 1 1 0%;
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
 .editorStage__frame {
-  flex: 1 1 auto;
+  flex: 1 1 0%;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 3px;
-  border-radius: 20px;
+  padding: var(--editor-rainbow-border);
+  border-radius: var(--editor-frame-outer-radius);
   background: linear-gradient(
     135deg,
     #fbbf24,
@@ -362,15 +371,15 @@
     #3b82f6,
     #22c55e
   );
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
 }
 
 .editorStage__frameInner {
-  flex: 1 1 auto;
+  flex: 1 1 0%;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  border-radius: 17px;
+  border-radius: calc(var(--editor-frame-outer-radius) - var(--editor-rainbow-border));
   background: #fff;
   overflow: hidden;
 }
@@ -395,9 +404,10 @@
 }
 
 .microsite__editor--visible {
-  flex: 1 1 auto;
+  flex: 1 1 0%;
   min-height: 0;
   width: 100%;
+  height: 100%;
   visibility: visible;
   pointer-events: auto;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -405,11 +415,22 @@
   flex-direction: column;
 }
 
-/* Adobe mounts a wrapper/iframe under the host; stretch first-level children to fill flex space */
+/* Adobe mounts a wrapper/iframe under the host; stretch wrappers + iframe to fill flex space */
 .microsite__editor--visible > * {
-  flex: 1 1 auto;
+  flex: 1 1 0%;
   min-height: 0;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.microsite__editor--visible iframe {
+  flex: 1 1 0%;
+  min-height: 0;
+  width: 100%;
+  border: 0;
+  display: block;
 }
 
 /* ——— Buttons ——— */
