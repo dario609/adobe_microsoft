@@ -8,8 +8,9 @@ import {
   REQUIRE_ADOBE_TEMPLATE,
   SESSION_SECONDS,
 } from '../constants/config.js'
+import { tryAutomatePublishExport } from '../adobe/tryAutomatePublishExport.js'
 import { FINISH_AFTER_NAME_BANNER } from '../constants/flow.js'
-import { dataUrlToBlob } from '../utils/dataUrl.js'
+import { blobFromAdobeExport, getPublishAssetPayload } from '../utils/adobeAsset.js'
 
 export function useMicrositeWorkflow() {
   const editorRef = useRef(null)
@@ -36,18 +37,17 @@ export function useMicrositeWorkflow() {
     setShowNameModal(false)
     setRemaining(SESSION_SECONDS)
 
-    try {
-      await sdkRef.current?.close?.(false)
-    } catch (e) {
-      console.warn('Adobe close:', e)
-    }
-
     const host = document.getElementById('express-editor')
     if (host) {
       host.innerHTML = ''
     }
     launchedRef.current = false
     setPhase('landing')
+
+    const sdk = sdkRef.current
+    if (sdk?.close) {
+      Promise.resolve(sdk.close(false)).catch((e) => console.warn('Adobe close:', e))
+    }
   }, [])
 
   const handleTimeUp = useCallback(async () => {
@@ -136,26 +136,28 @@ export function useMicrositeWorkflow() {
             const expectedName = pendingFilenameRef.current
             if (!expectedName?.trim()) {
               setError(
-                'Use Finish on this page first, enter a file name, then export from Adobe Express.'
+                'Use Finish on this page first, enter a file name, then tap Export & upload in Adobe Express.'
               )
               return
             }
 
-            const firstAsset = publishParams?.asset?.[0]
-            if (!firstAsset?.data) {
-              setError('No image was returned from Adobe. Try exporting again.')
+            const payload = getPublishAssetPayload(publishParams)
+            if (!payload) {
+              setError(
+                'No file came back from Adobe. Tap the blue Export & upload button inside the editor (not only Continue on this page).'
+              )
               return
             }
 
             setUploadBusy(true)
             setError('')
             try {
-              const blob = dataUrlToBlob(firstAsset.data)
+              const blob = await blobFromAdobeExport(payload)
               await uploadDesignToServer(blob, expectedName)
               setBanner('Uploaded to Dropbox. Resetting for the next guest…')
               await resetForNextUser()
             } catch (e) {
-              console.error(e)
+              console.error('Publish/upload:', e, publishParams)
               setError(e?.message || String(e))
             } finally {
               setUploadBusy(false)
@@ -187,7 +189,7 @@ export function useMicrositeWorkflow() {
     setShowNameModal(true)
   }, [])
 
-  const confirmFileName = useCallback(() => {
+  const confirmFileName = useCallback(async () => {
     const n = nameInput.trim()
     if (!n) {
       setError('Please enter a file name.')
@@ -196,6 +198,14 @@ export function useMicrositeWorkflow() {
     pendingFilenameRef.current = n
     setShowNameModal(false)
     setError('')
+    setBanner('')
+
+    try {
+      await tryAutomatePublishExport(editorRef.current)
+    } catch (e) {
+      console.warn('tryAutomatePublishExport:', e)
+    }
+
     setBanner(FINISH_AFTER_NAME_BANNER)
   }, [nameInput])
 

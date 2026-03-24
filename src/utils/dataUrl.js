@@ -6,7 +6,7 @@ export function dataUrlToBlob(data) {
   if (!m) {
     throw new Error('Expected a base64 data URL from Adobe.')
   }
-  const binary = atob(m[2])
+  const binary = atob(m[2].replace(/\s/g, ''))
   const bytes = new Uint8Array(binary.length)
   for (let i = 0; i < binary.length; i += 1) {
     bytes[i] = binary.charCodeAt(i)

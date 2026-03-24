@@ -3,7 +3,7 @@
  */
 
 export const FINISH_AFTER_NAME_BANNER =
-  'In Adobe Express, open Export or Share, then tap Export & upload. Your file uploads to Dropbox automatically and this screen resets for the next guest.'
+  'If the export dialog did not open automatically, tap the blue Export & upload button in Adobe Express. That completes the upload to Dropbox and resets for the next guest.'
 
 export const USER_FLOW_STEPS = [
   'You land on this branded experience.',

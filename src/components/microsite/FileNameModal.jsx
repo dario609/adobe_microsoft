@@ -12,8 +12,8 @@ export function FileNameModal({ value, onChange, onConfirm, onCancel }) {
           Name your file
         </h2>
         <p className="microsite__modalHint">
-          File name only (no extension). After you continue, export from Adobe Express — the file uploads
-          to Dropbox automatically, then this session resets.
+          File name only (no extension). The next step runs export, uploads to Dropbox, and resets this
+          session (same as Export & upload in Adobe).
         </p>
         <label className="microsite__label" htmlFor="file-name-input">
           File name
@@ -36,7 +36,7 @@ export function FileNameModal({ value, onChange, onConfirm, onCancel }) {
             Cancel
           </button>
           <button type="button" className="microsite__btn microsite__btn--primary" onClick={onConfirm}>
-            Continue
+            Export & upload to Dropbox
           </button>
         </div>
       </div>
