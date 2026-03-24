@@ -2,9 +2,9 @@
 :root {
   /* Centered “boundary” column — not edge-to-edge (matches kiosk-style reference). */
   --editor-boundary-max: min(1180px, calc(100vw - 2.5rem));
-  /* Thick rainbow ring around the Express host (gradient = padding). */
-  --editor-rainbow-border: 22px;
-  --editor-frame-outer-radius: 40px;
+  /* Rainbow ring around the Express host (gradient = padding). */
+  --editor-rainbow-border: 16px;
+  --editor-frame-outer-radius: 32px;
 }
 
 @media (max-width: 480px) {
@@ -68,8 +68,8 @@
   width: 100%;
   max-width: none;
   margin: 0;
-  /* Only horizontal gutters + safe bottom inset — avoid a large empty band under the editor */
-  padding: 0 max(16px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom))
+  /* Horizontal gutters + safe-area only (no extra bottom band) */
+  padding: 0 max(16px, env(safe-area-inset-right)) env(safe-area-inset-bottom)
     max(16px, env(safe-area-inset-left));
   text-align: left;
   align-items: center;
@@ -340,6 +340,7 @@
   /* flex-basis 0% + grow: reliably consume all space below header/toast (no dead band) */
   flex: 1 1 0%;
   min-height: 0;
+  align-self: stretch;
   width: 100%;
   max-width: var(--editor-boundary-max);
   display: flex;
@@ -407,28 +408,30 @@
   flex: 1 1 0%;
   min-height: 0;
   width: 100%;
-  height: 100%;
+  position: relative;
+  overflow: hidden;
   visibility: visible;
   pointer-events: auto;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  display: flex;
-  flex-direction: column;
 }
 
-/* Adobe mounts a wrapper/iframe under the host; stretch wrappers + iframe to fill flex space */
+/*
+ * CC Everywhere mounts a wrapper + iframe; flex height often does not propagate into the iframe.
+ * Pin the iframe to the host box so no near-black host background shows as an empty band (dark mode).
+ */
+/* SDK root: fill host so iframe’s containing block is full height (not a collapsed wrapper) */
 .microsite__editor--visible > * {
-  flex: 1 1 0%;
-  min-height: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  height: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+  position: relative;
 }
 
 .microsite__editor--visible iframe {
-  flex: 1 1 0%;
-  min-height: 0;
+  position: absolute;
+  inset: 0;
   width: 100%;
+  height: 100%;
   border: 0;
   display: block;
 }
@@ -510,8 +513,9 @@
     color: #fecaca;
   }
 
+  /* Match Express chrome so any sub-pixel gap is not a harsh black bar */
   .microsite__editor--visible {
-    background: #0c0c0e;
+    background: #ffffff;
   }
 }
 
