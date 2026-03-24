@@ -3,14 +3,16 @@
  * @see https://www.dropbox.com/developers/documentation/http/documentation#authorization
  */
 
+import { dropboxEnv } from './envVars.js'
+
 const AUTHORIZE_URL = 'https://www.dropbox.com/oauth2/authorize'
 const TOKEN_URL = 'https://api.dropboxapi.com/oauth2/token'
 
 export function readOAuthEnv() {
   return {
-    clientId: process.env.DROPBOX_APP_KEY?.trim(),
-    clientSecret: process.env.DROPBOX_APP_SECRET?.trim(),
-    redirectUri: process.env.DROPBOX_REDIRECT_URI?.trim(),
+    clientId: dropboxEnv('DROPBOX_APP_KEY'),
+    clientSecret: dropboxEnv('DROPBOX_APP_SECRET'),
+    redirectUri: dropboxEnv('DROPBOX_REDIRECT_URI'),
   }
 }
 

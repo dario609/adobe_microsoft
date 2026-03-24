@@ -16,7 +16,11 @@ export function ensureImageExtension(filename) {
 
 /** Dropbox path: optional DROPBOX_UPLOAD_FOLDER + filename (leading slash, no doubles). */
 export function buildDropboxFilePath(filename) {
-  const folder = (process.env.DROPBOX_UPLOAD_FOLDER || '').trim().replace(/\\/g, '/')
+  const folder = (
+    process.env.DROPBOX_UPLOAD_FOLDER?.trim() ||
+    process.env.VITE_DROPBOX_UPLOAD_FOLDER?.trim() ||
+    ''
+  ).replace(/\\/g, '/')
   const prefix = folder ? (folder.startsWith('/') ? folder : `/${folder}`) : ''
   return `${prefix}/${filename}`.replace(/\/{2,}/g, '/')
 }
