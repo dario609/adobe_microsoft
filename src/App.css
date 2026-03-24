@@ -52,6 +52,34 @@
   max-width: 40rem;
 }
 
+.microsite__flowList {
+  margin: 0 0 22px;
+  padding-left: 1.35rem;
+  max-width: 44rem;
+  text-align: left;
+  line-height: 1.55;
+}
+
+.microsite__flowList li {
+  margin-bottom: 10px;
+}
+
+.microsite__flowList li:last-child {
+  margin-bottom: 0;
+}
+
+.microsite__status {
+  margin: 16px 0 0;
+  font-size: 0.92rem;
+  color: var(--text);
+  line-height: 1.5;
+  max-width: 44rem;
+}
+
+.microsite__status code {
+  font-size: 0.88em;
+}
+
 .microsite__sessionBar {
   display: flex;
   align-items: center;
@@ -63,6 +91,9 @@
   background: linear-gradient(90deg, rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.1));
   border: 1px solid var(--border);
   border-radius: 14px;
+  position: sticky;
+  top: 8px;
+  z-index: 5;
 }
 
 .microsite__timer {
@@ -128,15 +159,29 @@
 }
 
 .microsite__editor {
-  min-height: 0;
   overflow: hidden;
   border-radius: 16px;
   border: 1px solid var(--border);
   background: #fff;
 }
 
+/* Avoid display:none / hidden: Adobe may need a real box when embedding */
+.microsite__editor--idle {
+  min-height: 0;
+  max-height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  visibility: hidden;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .microsite__editor--visible {
   min-height: min(72vh, 820px);
+  max-height: none;
+  visibility: visible;
+  pointer-events: auto;
   box-shadow: var(--shadow);
 }
 
