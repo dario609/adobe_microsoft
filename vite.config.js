@@ -9,7 +9,9 @@ dns.setDefaultResultOrder('verbatim')
 export default defineConfig({
   plugins: [react(), basicSsl()],
   server: {
-    host: '127.0.0.1',
+    // `true` = listen on all interfaces so phones/tablets on the same Wi‑Fi can open https://<your-lan-ip>:5173
+    // Use host: '127.0.0.1' if you only want local machine access.
+    host: true,
     port: 5173,
     strictPort: true,
     https: true,

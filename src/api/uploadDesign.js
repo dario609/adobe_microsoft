@@ -1,4 +1,5 @@
 import { safeBaseName } from '../utils/dataUrl.js'
+import { friendlyNetworkFailure, friendlyUploadFailure } from '../utils/uploadErrors.js'
 
 export async function uploadDesignToServer(blob, baseName) {
   const fd = new FormData()
@@ -10,14 +11,12 @@ export async function uploadDesignToServer(blob, baseName) {
   try {
     res = await fetch('/api/upload', { method: 'POST', body: fd })
   } catch {
-    throw new Error(
-      'Cannot reach the upload API. Run `npm run dev` (starts Vite + server) or run `npm run dev:api` in a second terminal on port 3001.'
-    )
+    throw new Error(friendlyNetworkFailure())
   }
 
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
-    throw new Error(data.error || `Upload failed (${res.status})`)
+    throw new Error(friendlyUploadFailure(res, data))
   }
   return data
 }

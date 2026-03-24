@@ -11,6 +11,7 @@ import {
 import { tryAutomatePublishExport } from '../adobe/tryAutomatePublishExport.js'
 import { FINISH_AFTER_NAME_BANNER } from '../constants/flow.js'
 import { blobFromAdobeExport, getPublishAssetPayload } from '../utils/adobeAsset.js'
+import { friendlyExportFailure } from '../utils/uploadErrors.js'
 
 export function useMicrositeWorkflow() {
   const editorRef = useRef(null)
@@ -49,6 +50,17 @@ export function useMicrositeWorkflow() {
       Promise.resolve(sdk.close(false)).catch((e) => console.warn('Adobe close:', e))
     }
   }, [])
+
+  const requestLeaveSession = useCallback(async () => {
+    if (uploadBusy) return
+    if (
+      typeof window !== 'undefined' &&
+      !window.confirm('Leave this session? Unsaved work in the editor will be lost.')
+    ) {
+      return
+    }
+    await resetForNextUser()
+  }, [uploadBusy, resetForNextUser])
 
   const handleTimeUp = useCallback(async () => {
     setBanner('')
@@ -135,17 +147,13 @@ export function useMicrositeWorkflow() {
           onPublish: async (_intent, publishParams) => {
             const expectedName = pendingFilenameRef.current
             if (!expectedName?.trim()) {
-              setError(
-                'Use Finish on this page first, enter a file name, then tap Export & upload in Adobe Express.'
-              )
+              setError('Enter a file name (Finish), then use Export & upload in Adobe.')
               return
             }
 
             const payload = getPublishAssetPayload(publishParams)
             if (!payload) {
-              setError(
-                'No file came back from Adobe. Tap the blue Export & upload button inside the editor (not only Continue on this page).'
-              )
+              setError('No export yet. In Adobe Express, tap Export & upload.')
               return
             }
 
@@ -158,14 +166,14 @@ export function useMicrositeWorkflow() {
               await resetForNextUser()
             } catch (e) {
               console.error('Publish/upload:', e, publishParams)
-              setError(e?.message || String(e))
+              setError(friendlyExportFailure(e?.message || String(e)))
             } finally {
               setUploadBusy(false)
             }
           },
           onError: (err) => {
             console.error('Editor error:', err)
-            setError(String(err))
+            setError('The editor hit a problem. Try refreshing the page or starting again.')
           },
         },
       }
@@ -229,6 +237,7 @@ export function useMicrositeWorkflow() {
     setNameInput,
     uploadBusy,
     startEditor,
+    resetSession: requestLeaveSession,
     openFinishModal,
     confirmFileName,
     cancelNameModal,

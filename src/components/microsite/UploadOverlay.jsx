@@ -1,7 +1,10 @@
 export function UploadOverlay() {
   return (
-    <div className="microsite__overlay" role="alert" aria-busy="true">
-      <p>Uploading to Dropbox…</p>
+    <div className="busyOverlay" role="alert" aria-busy="true">
+      <div className="busyOverlay__card">
+        <div className="busyOverlay__spinner" aria-hidden />
+        <p className="busyOverlay__text">Uploading…</p>
+      </div>
     </div>
   )
 }

@@ -6,40 +6,37 @@ export function LandingHero({ status, onStart, canStart, requireAdobeTemplate, t
     status === 'loading' ? 'Preparing…' : status === 'error' ? 'Unavailable' : 'Start'
 
   return (
-    <section className="microsite__hero" aria-label="How it works">
-      <ol className="microsite__flowList">
+    <section className="landHero" aria-label="Session">
+      <ol className="landHero__steps">
         {USER_FLOW_STEPS.map((step) => (
           <li key={step}>{step}</li>
         ))}
       </ol>
-      <button
-        type="button"
-        className="microsite__btn microsite__btn--primary"
-        onClick={onStart}
-        disabled={startDisabled}
-      >
-        {startLabel}
-      </button>
-      <p className="microsite__status" aria-live="polite">
-        {status === 'loading' && <span>Adobe Express: connecting…</span>}
+      <div className="landHero__cta">
+        <button
+          type="button"
+          className="btn btn--primary btn--large"
+          onClick={onStart}
+          disabled={startDisabled}
+        >
+          {startLabel}
+        </button>
+      </div>
+      <p className="landHero__status" aria-live="polite">
+        {status === 'loading' && <span>Connecting to Adobe Express…</span>}
         {status === 'ready' && requireAdobeTemplate && !templateConfigured && (
           <span>
-            Set <code>VITE_ADOBE_TEMPLATE_ID</code> in <code>.env</code> (required for this deployment),
-            then restart Vite.
+            Add <code>VITE_ADOBE_TEMPLATE_ID</code> in <code>.env</code> and restart the dev server.
           </span>
         )}
         {status === 'ready' && !(requireAdobeTemplate && !templateConfigured) && (
           <span>
-            {templateConfigured
-              ? 'Adobe Express: ready — opens with your template.'
-              : 'Adobe Express: ready — no template ID; a blank canvas is used. Add VITE_ADOBE_TEMPLATE_ID for a fixed template.'}
+            {templateConfigured ? 'Ready — opens with your template.' : 'Ready — blank canvas (add a template ID for a fixed design).'}
           </span>
         )}
         {status === 'error' && (
           <span>
-            Adobe Express could not start. Check <code>VITE_ADOBE_CLIENT_ID</code> and that this URL
-            is allowed in your Adobe app (e.g. <code>https://127.0.0.1:5173</code>). Restart Vite after
-            changing <code>.env</code>.
+            Could not load Adobe. Check <code>VITE_ADOBE_CLIENT_ID</code> and that this site URL is allowed in your Adobe project.
           </span>
         )}
       </p>

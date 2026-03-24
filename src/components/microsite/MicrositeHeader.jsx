@@ -1,15 +1,10 @@
 export function MicrositeHeader({ brandName }) {
   return (
-    <header className="microsite__header">
-      <div className="microsite__brand">
-        <span className="microsite__logo" aria-hidden />
-        <div>
-          <h1 className="microsite__title">{brandName}</h1>
-          <p className="microsite__tagline">
-            Start → edit with Express → session timer → Finish → name your file → upload to Dropbox →
-            reset for the next guest.
-          </p>
-        </div>
+    <header className="landHeader">
+      <div className="landHeader__mark" aria-hidden />
+      <div className="landHeader__text">
+        <h1 className="landHeader__title">{brandName}</h1>
+        <p className="landHeader__sub">Create your design, then save it in one flow.</p>
       </div>
     </header>
   )

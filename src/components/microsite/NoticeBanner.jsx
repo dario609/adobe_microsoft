@@ -1,6 +1,6 @@
 export function NoticeBanner({ children }) {
   return (
-    <div className="microsite__notice" role="status">
+    <div className="toast" role="status">
       {children}
     </div>
   )
