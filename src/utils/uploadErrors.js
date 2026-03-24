@@ -9,6 +9,12 @@ export function friendlyUploadFailure(res, data) {
   if (res.status === 503 && data?.code === 'DROPBOX_NOT_CONFIGURED') {
     return msg || 'Cloud save is not set up on this server yet.'
   }
+  if (res.status === 503 && data?.code === 'DROPBOX_TOKEN_EXPIRED') {
+    return (
+      msg ||
+      'Dropbox access on the server expired. An administrator needs to reconnect Dropbox (new token or refresh-token setup).'
+    )
+  }
   if (res.status === 503) {
     return msg || 'Save service is temporarily unavailable. Try again in a moment.'
   }

@@ -11,6 +11,16 @@ const DROPBOX_NOT_READY_USER =
 const DROPBOX_NOT_READY_DETAIL =
   'Set DROPBOX_ACCESS_TOKEN, or DROPBOX_REFRESH_TOKEN + DROPBOX_APP_KEY + DROPBOX_APP_SECRET. For OAuth once: GET /api/oauth/dropbox/start (redirect URI must match Dropbox app settings).'
 
+const DROPBOX_TOKEN_EXPIRED_DETAIL =
+  'The Dropbox access token expired. Prefer DROPBOX_REFRESH_TOKEN + DROPBOX_APP_KEY + DROPBOX_APP_SECRET (SDK refreshes automatically), or complete OAuth again and update .env.'
+
+/** @param {unknown} err */
+function isDropboxTokenExpired(err) {
+  if (err?.name !== 'DropboxResponseError' || err.status !== 401) return false
+  const blob = JSON.stringify(err.error ?? {})
+  return /expired_access_token/.test(blob)
+}
+
 export function createUploadRouter() {
   const router = Router()
 
@@ -43,6 +53,14 @@ export function createUploadRouter() {
       res.json({ ok: true, path: dropboxPath })
     } catch (err) {
       console.error('Upload error:', err)
+      if (isDropboxTokenExpired(err)) {
+        return res.status(503).json({
+          error:
+            'Dropbox access expired on the server. Ask your administrator to reconnect Dropbox (refresh token or new OAuth).',
+          code: 'DROPBOX_TOKEN_EXPIRED',
+          detail: DROPBOX_TOKEN_EXPIRED_DETAIL,
+        })
+      }
       res.status(500).json({ error: err?.message || 'Upload failed.' })
     }
   })
