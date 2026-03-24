@@ -75,6 +75,12 @@ body {
   flex-direction: column;
 }
 
+/* Avoid dark :root background showing at edges while editing (system dark mode). */
+#root:has(> .appRoot--editing) {
+  background: #ffffff;
+  color-scheme: light;
+}
+
 h1,
 h2 {
   font-family: var(--heading);
