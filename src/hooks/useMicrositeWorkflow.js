@@ -28,8 +28,10 @@ export function useMicrositeWorkflow() {
   const [nameInput, setNameInput] = useState('')
   const [uploadBusy, setUploadBusy] = useState(false)
   const [banner, setBanner] = useState('')
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
 
   const resetForNextUser = useCallback(async () => {
+    setShowLeaveConfirm(false)
     setError('')
     setBanner('')
     setTimerRunning(false)
@@ -51,16 +53,19 @@ export function useMicrositeWorkflow() {
     }
   }, [])
 
-  const requestLeaveSession = useCallback(async () => {
+  const openLeaveConfirm = useCallback(() => {
     if (uploadBusy) return
-    if (
-      typeof window !== 'undefined' &&
-      !window.confirm('Leave this session? Unsaved work in the editor will be lost.')
-    ) {
-      return
-    }
+    setShowLeaveConfirm(true)
+  }, [uploadBusy])
+
+  const cancelLeaveConfirm = useCallback(() => {
+    setShowLeaveConfirm(false)
+  }, [])
+
+  const confirmLeaveSession = useCallback(async () => {
+    setShowLeaveConfirm(false)
     await resetForNextUser()
-  }, [uploadBusy, resetForNextUser])
+  }, [resetForNextUser])
 
   const handleTimeUp = useCallback(async () => {
     setBanner('')
@@ -147,7 +152,7 @@ export function useMicrositeWorkflow() {
           onPublish: async (_intent, publishParams) => {
             const expectedName = pendingFilenameRef.current
             if (!expectedName?.trim()) {
-              setError('Enter a file name (Finish), then use Export & upload in Adobe.')
+              setError('Enter your name (Finish), then use Export & upload in Adobe.')
               return
             }
 
@@ -200,7 +205,7 @@ export function useMicrositeWorkflow() {
   const confirmFileName = useCallback(async () => {
     const n = nameInput.trim()
     if (!n) {
-      setError('Please enter a file name.')
+      setError('Please enter your name.')
       return
     }
     pendingFilenameRef.current = n
@@ -237,7 +242,10 @@ export function useMicrositeWorkflow() {
     setNameInput,
     uploadBusy,
     startEditor,
-    resetSession: requestLeaveSession,
+    showLeaveConfirm,
+    openLeaveConfirm,
+    cancelLeaveConfirm,
+    confirmLeaveSession,
     openFinishModal,
     confirmFileName,
     cancelNameModal,
