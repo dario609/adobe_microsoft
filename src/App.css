@@ -384,12 +384,19 @@
 .editorStage__frameInner {
   flex: 1 1 0%;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
+  /* Grid + minmax(0,1fr): definite height for the host (avoids min-height:auto “content” gap under iframe) */
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   border-radius: calc(var(--editor-frame-outer-radius) - var(--editor-rainbow-border));
-  /* Express workspace chrome is light gray — avoids a harsh white strip if the iframe is 1px short */
   background: #f3f4f6;
   overflow: hidden;
+}
+
+.editorStage__frameInner > * {
+  min-width: 0;
+  min-height: 0;
+  align-self: stretch;
+  justify-self: stretch;
 }
 
 .microsite__editor {
@@ -412,9 +419,10 @@
 }
 
 .microsite__editor--visible {
-  flex: 1 1 0%;
-  min-height: 0;
   width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   position: relative;
   overflow: hidden;
   visibility: visible;
@@ -423,16 +431,9 @@
 }
 
 /*
- * Pin iframe to the host: flex height often does not apply inside cross-origin iframes,
- * which left a white/light band inside the frame. Centering stays correct via .editorShell margin-inline.
+ * Anchor iframe to #express-editor so it fills the rainbow inner rect even when the SDK
+ * wraps it (nested grid/flex on iframe alone often leaves a gray band below the embed).
  */
-.microsite__editor--visible > * {
-  height: 100%;
-  min-height: 100%;
-  box-sizing: border-box;
-  position: relative;
-}
-
 .microsite__editor--visible iframe {
   position: absolute;
   inset: 0;
