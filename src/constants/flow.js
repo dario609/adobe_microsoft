@@ -10,7 +10,7 @@ export const USER_FLOW_STEPS = [
   'Tap Start — Adobe Express opens with your predefined template.',
   'Edit your design in the embedded editor.',
   'A session countdown runs while you work.',
-  'Tap Finish — you are prompted for a file name (single field).',
+  'Tap Finish — enter the name used for pickup (one field).',
   'Export from Express — your file uploads to Dropbox automatically.',
   'The session resets so the next guest can begin.',
 ]

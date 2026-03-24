@@ -5,6 +5,9 @@ export const SESSION_SECONDS = Math.max(
 
 export const BRAND_NAME = import.meta.env.VITE_BRAND_NAME || 'Create & Share'
 
+/** Public URL to logo image (place your file in /public, e.g. /brand-logo.svg). */
+export const BRAND_LOGO_URL = import.meta.env.VITE_BRAND_LOGO_URL || '/brand-logo.svg'
+
 /** Express template document ID — required for “predefined template” when REQUIRE_ADOBE_TEMPLATE is true. */
 export const ADOBE_TEMPLATE_ID = import.meta.env.VITE_ADOBE_TEMPLATE_ID?.trim() ?? ''
 

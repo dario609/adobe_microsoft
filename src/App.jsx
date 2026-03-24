@@ -6,6 +6,7 @@ import { LandingHero } from './components/microsite/LandingHero.jsx'
 import { MicrositeHeader } from './components/microsite/MicrositeHeader.jsx'
 import { NoticeBanner } from './components/microsite/NoticeBanner.jsx'
 import { SessionHeader } from './components/microsite/SessionHeader.jsx'
+import { LeaveConfirmModal } from './components/microsite/LeaveConfirmModal.jsx'
 import { UploadOverlay } from './components/microsite/UploadOverlay.jsx'
 import { useMicrositeWorkflow } from './hooks/useMicrositeWorkflow.js'
 
@@ -14,7 +15,7 @@ export default function App() {
   const isEditing = m.phase === 'editing'
 
   return (
-    <div className={`appRoot${isEditing ? ' appRoot--editing' : ''}`}>
+    <div className={`appRoot${isEditing ? ' appRoot--editing' : ' appRoot--landing'}`}>
       <div className={`shell${isEditing ? ' shell--editing' : ' shell--landing'}`}>
         {!isEditing ? (
           <>
@@ -39,7 +40,7 @@ export default function App() {
               brandName={m.brandName}
               remainingSeconds={m.remaining}
               onFinish={m.openFinishModal}
-              onLeave={m.resetSession}
+              onLeave={m.openLeaveConfirm}
               uploadBusy={m.uploadBusy}
             />
             <div className="shell__errors shell__errors--session">
@@ -51,6 +52,10 @@ export default function App() {
         )}
 
         {m.uploadBusy ? <UploadOverlay /> : null}
+
+        {m.showLeaveConfirm ? (
+          <LeaveConfirmModal onConfirm={m.confirmLeaveSession} onCancel={m.cancelLeaveConfirm} />
+        ) : null}
 
         {m.showNameModal ? (
           <FileNameModal
