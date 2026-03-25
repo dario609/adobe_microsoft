@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { apiUrl } from '../../api/apiBase.js'
 
 /**
  * Shows PNG from GET /api/banner when the operator has uploaded one (POST /api/banner).
@@ -15,7 +16,7 @@ export function SessionBanner({ cacheKey = 0 }) {
     <figure className={`sessionBanner${loaded ? ' sessionBanner--loaded' : ''}`} aria-hidden={!loaded}>
       <img
         className="sessionBanner__img"
-        src={`/api/banner?v=${cacheKey}`}
+        src={apiUrl(`/api/banner?v=${cacheKey}`)}
         alt=""
         decoding="async"
         onLoad={() => setLoaded(true)}

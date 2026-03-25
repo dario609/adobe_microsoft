@@ -56,19 +56,25 @@ export function readGateCookie(req) {
 }
 
 export function setGateCookieHeader(res, token) {
+  const crossSite = ['true', '1', 'yes', 'on'].includes(
+    String(process.env.SITE_CROSS_SITE_COOKIES || '').trim().toLowerCase()
+  )
   const parts = [
     `${COOKIE}=${encodeURIComponent(token)}`,
     'Path=/',
     `Max-Age=${MAX_AGE_SEC}`,
     'HttpOnly',
-    'SameSite=Lax',
+    crossSite ? 'SameSite=None' : 'SameSite=Lax',
   ]
-  if (process.env.NODE_ENV === 'production') parts.push('Secure')
+  if (process.env.NODE_ENV === 'production' || crossSite) parts.push('Secure')
   res.setHeader('Set-Cookie', parts.join('; '))
 }
 
 export function clearGateCookieHeader(res) {
-  const parts = [`${COOKIE}=`, 'Path=/', 'Max-Age=0', 'HttpOnly', 'SameSite=Lax']
-  if (process.env.NODE_ENV === 'production') parts.push('Secure')
+  const crossSite = ['true', '1', 'yes', 'on'].includes(
+    String(process.env.SITE_CROSS_SITE_COOKIES || '').trim().toLowerCase()
+  )
+  const parts = [`${COOKIE}=`, 'Path=/', 'Max-Age=0', 'HttpOnly', crossSite ? 'SameSite=None' : 'SameSite=Lax']
+  if (process.env.NODE_ENV === 'production' || crossSite) parts.push('Secure')
   res.setHeader('Set-Cookie', parts.join('; '))
 }

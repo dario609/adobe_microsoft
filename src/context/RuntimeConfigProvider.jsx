@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { RuntimeConfigContext } from './runtimeConfigContext.js'
+import { apiUrl } from '../api/apiBase.js'
 
 function clientFallbackTimer() {
   const raw = import.meta.env.VITE_SESSION_SECONDS
@@ -27,8 +28,8 @@ export function RuntimeConfigProvider({ children }) {
 
     try {
       const [cRes, aRes] = await Promise.all([
-        fetch('/api/config', { credentials: 'include' }),
-        fetch('/api/auth/site', { credentials: 'include' }),
+        fetch(apiUrl('/api/config'), { credentials: 'include' }),
+        fetch(apiUrl('/api/auth/site'), { credentials: 'include' }),
       ])
       if (cRes.ok) {
         const c = await cRes.json()
@@ -61,7 +62,7 @@ export function RuntimeConfigProvider({ children }) {
 
   const loginSite = useCallback(
     async (password) => {
-      const res = await fetch('/api/auth/site/login', {
+      const res = await fetch(apiUrl('/api/auth/site/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

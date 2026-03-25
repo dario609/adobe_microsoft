@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import { apiUrl } from '../../api/apiBase.js'
 
 /**
  * Operator control: POST PNG to /api/banner, then parent bumps cache so SessionBanner reloads.
@@ -20,7 +21,7 @@ export function BannerHeroUpload({ onUploaded, disabled }) {
       try {
         const fd = new FormData()
         fd.append('banner', file)
-        const res = await fetch('/api/banner', { method: 'POST', body: fd, credentials: 'include' })
+        const res = await fetch(apiUrl('/api/banner'), { method: 'POST', body: fd, credentials: 'include' })
         const data = await res.json().catch(() => ({}))
         if (!res.ok) {
           throw new Error(typeof data.error === 'string' ? data.error : `Upload failed (${res.status})`)
@@ -47,7 +48,7 @@ export function BannerHeroUpload({ onUploaded, disabled }) {
     setBusy(true)
     setStatus('Removing…')
     try {
-      const res = await fetch('/api/banner', { method: 'DELETE', credentials: 'include' })
+      const res = await fetch(apiUrl('/api/banner'), { method: 'DELETE', credentials: 'include' })
       if (!res.ok) throw new Error('Could not remove banner.')
       setStatus('Banner removed.')
       onUploaded?.()
