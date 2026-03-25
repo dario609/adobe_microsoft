@@ -70,12 +70,12 @@ export function BannerHeroUpload({ onUploaded, disabled }) {
           disabled={disabled || busy}
           id="session-banner-file"
         />
-        <label htmlFor="session-banner-file" className="btn btn--ghost sessionBannerUpload__choose">
-          {busy ? 'Please wait…' : 'Upload PNG (above editor)'}
+        <label htmlFor="session-banner-file" className="btn btn--dark sessionBannerUpload__choose">
+          {busy ? 'Please wait…' : 'Upload PNG'}
         </label>
         <button
           type="button"
-          className="btn btn--ghost sessionBannerUpload__remove"
+          className="btn btn--dark sessionBannerUpload__remove"
           onClick={onRemove}
           disabled={disabled || busy}
         >
