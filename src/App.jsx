@@ -1,19 +1,22 @@
 import './App.css'
+import { useState } from 'react'
+import { BannerHeroUpload } from './components/microsite/BannerHeroUpload.jsx'
 import { ExpressEditorHost } from './components/microsite/ExpressEditorHost.jsx'
 import { ErrorBanner } from './components/microsite/ErrorBanner.jsx'
 import { FileNameModal } from './components/microsite/FileNameModal.jsx'
 import { LandingHero } from './components/microsite/LandingHero.jsx'
+import { LeaveConfirmModal } from './components/microsite/LeaveConfirmModal.jsx'
 import { MicrositeHeader } from './components/microsite/MicrositeHeader.jsx'
 import { NoticeBanner } from './components/microsite/NoticeBanner.jsx'
 import { SessionBanner } from './components/microsite/SessionBanner.jsx'
 import { SessionHeader } from './components/microsite/SessionHeader.jsx'
-import { LeaveConfirmModal } from './components/microsite/LeaveConfirmModal.jsx'
 import { UploadOverlay } from './components/microsite/UploadOverlay.jsx'
 import { useMicrositeWorkflow } from './hooks/useMicrositeWorkflow.js'
 
 export default function App() {
   const m = useMicrositeWorkflow()
   const isEditing = m.phase === 'editing'
+  const [bannerCacheKey, setBannerCacheKey] = useState(0)
 
   return (
     <div className={`appRoot${isEditing ? ' appRoot--editing' : ' appRoot--landing'}`}>
@@ -48,7 +51,11 @@ export default function App() {
               <ErrorBanner message={m.error} />
             </div>
             {m.banner ? <NoticeBanner>{m.banner}</NoticeBanner> : null}
-            <SessionBanner />
+            <BannerHeroUpload
+              onUploaded={() => setBannerCacheKey((k) => k + 1)}
+              disabled={m.uploadBusy}
+            />
+            <SessionBanner key={bannerCacheKey} cacheKey={bannerCacheKey} />
             <ExpressEditorHost isActive />
           </>
         )}

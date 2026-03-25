@@ -110,6 +110,63 @@
   box-sizing: border-box;
 }
 
+/* Operator: upload PNG for hero above Express */
+.shell--editing > .sessionBannerUpload {
+  width: 100%;
+  max-width: var(--editor-boundary-max);
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+.sessionBannerUpload {
+  margin-top: 6px;
+  margin-bottom: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px dashed var(--border);
+  background: color-mix(in srgb, var(--bg) 96%, var(--text-h) 2%);
+}
+
+.sessionBannerUpload__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.sessionBannerUpload__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sessionBannerUpload__choose {
+  cursor: pointer;
+  margin: 0;
+  font-weight: 600;
+}
+
+.sessionBannerUpload__remove {
+  font-size: 0.875rem;
+  padding: 10px 14px;
+  color: var(--text);
+}
+
+.sessionBannerUpload__status {
+  margin: 8px 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--text);
+  text-align: left;
+}
+
 /* PNG from POST /api/banner — same width column as the Express frame */
 .shell--editing > .sessionBanner {
   width: 100%;
