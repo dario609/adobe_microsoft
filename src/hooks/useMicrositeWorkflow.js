@@ -2,18 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { openEditor } from '../adobe/editorConfig.js'
 import { getInitializedSdk } from '../adobe/sdk.js'
 import { uploadDesignToServer } from '../api/uploadDesign.js'
-import {
-  ADOBE_TEMPLATE_ID,
-  BRAND_NAME,
-  REQUIRE_ADOBE_TEMPLATE,
-  SESSION_SECONDS,
-} from '../constants/config.js'
+import { ADOBE_TEMPLATE_ID, BRAND_NAME, REQUIRE_ADOBE_TEMPLATE } from '../constants/config.js'
+import { useRuntimeConfig } from './useRuntimeConfig.js'
 import { tryAutomatePublishExport } from '../adobe/tryAutomatePublishExport.js'
 import { FINISH_AFTER_NAME_BANNER } from '../constants/flow.js'
 import { blobFromAdobeExport, getPublishAssetPayload } from '../utils/adobeAsset.js'
 import { friendlyExportFailure } from '../utils/uploadErrors.js'
 
 export function useMicrositeWorkflow() {
+  const { sessionSeconds, showSessionTimer } = useRuntimeConfig()
   const editorRef = useRef(null)
   const sdkRef = useRef(null)
   const launchedRef = useRef(false)
@@ -22,13 +19,17 @@ export function useMicrositeWorkflow() {
   const [status, setStatus] = useState('loading')
   const [error, setError] = useState('')
   const [phase, setPhase] = useState('landing')
-  const [remaining, setRemaining] = useState(SESSION_SECONDS)
+  const [remaining, setRemaining] = useState(sessionSeconds)
   const [timerRunning, setTimerRunning] = useState(false)
   const [showNameModal, setShowNameModal] = useState(false)
   const [nameInput, setNameInput] = useState('')
   const [uploadBusy, setUploadBusy] = useState(false)
   const [banner, setBanner] = useState('')
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+
+  useEffect(() => {
+    setRemaining(sessionSeconds)
+  }, [sessionSeconds])
 
   const resetForNextUser = useCallback(async () => {
     setShowLeaveConfirm(false)
@@ -38,7 +39,7 @@ export function useMicrositeWorkflow() {
     pendingFilenameRef.current = null
     setNameInput('')
     setShowNameModal(false)
-    setRemaining(SESSION_SECONDS)
+    setRemaining(sessionSeconds)
 
     const host = document.getElementById('express-editor')
     if (host) {
@@ -51,7 +52,7 @@ export function useMicrositeWorkflow() {
     if (sdk?.close) {
       Promise.resolve(sdk.close(false)).catch((e) => console.warn('Adobe close:', e))
     }
-  }, [])
+  }, [sessionSeconds])
 
   const openLeaveConfirm = useCallback(() => {
     if (uploadBusy) return
@@ -107,7 +108,7 @@ export function useMicrositeWorkflow() {
   }, [])
 
   useEffect(() => {
-    if (!timerRunning || phase !== 'editing') return undefined
+    if (!timerRunning || phase !== 'editing' || !showSessionTimer || sessionSeconds <= 0) return undefined
 
     const id = setInterval(() => {
       setRemaining((r) => {
@@ -124,7 +125,7 @@ export function useMicrositeWorkflow() {
     }, 1000)
 
     return () => clearInterval(id)
-  }, [timerRunning, phase, handleTimeUp])
+  }, [timerRunning, phase, handleTimeUp, showSessionTimer, sessionSeconds])
 
   const startEditor = useCallback(() => {
     const editor = editorRef.current
@@ -139,9 +140,9 @@ export function useMicrositeWorkflow() {
     setError('')
     setBanner('')
     pendingFilenameRef.current = null
-    setRemaining(SESSION_SECONDS)
+    setRemaining(sessionSeconds)
     setPhase('editing')
-    setTimerRunning(true)
+    setTimerRunning(showSessionTimer && sessionSeconds > 0)
 
     const runCreate = () => {
       const appConfig = {
@@ -195,7 +196,7 @@ export function useMicrositeWorkflow() {
     requestAnimationFrame(() => {
       requestAnimationFrame(runCreate)
     })
-  }, [status, resetForNextUser])
+  }, [status, resetForNextUser, sessionSeconds, showSessionTimer])
 
   const openFinishModal = useCallback(() => {
     setNameInput('')
@@ -252,5 +253,6 @@ export function useMicrositeWorkflow() {
     canStart,
     requireAdobeTemplate: REQUIRE_ADOBE_TEMPLATE,
     templateConfigured,
+    showSessionTimer,
   }
 }

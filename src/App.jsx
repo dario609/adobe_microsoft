@@ -10,10 +10,30 @@ import { MicrositeHeader } from './components/microsite/MicrositeHeader.jsx'
 import { NoticeBanner } from './components/microsite/NoticeBanner.jsx'
 import { SessionBanner } from './components/microsite/SessionBanner.jsx'
 import { SessionHeader } from './components/microsite/SessionHeader.jsx'
+import { SitePasswordGate } from './components/microsite/SitePasswordGate.jsx'
 import { UploadOverlay } from './components/microsite/UploadOverlay.jsx'
+import { useRuntimeConfig } from './hooks/useRuntimeConfig.js'
 import { useMicrositeWorkflow } from './hooks/useMicrositeWorkflow.js'
 
 export default function App() {
+  const rt = useRuntimeConfig()
+
+  if (!rt.ready) {
+    return (
+      <div className="appBoot">
+        <p className="appBoot__text">Loading…</p>
+      </div>
+    )
+  }
+
+  if (rt.sitePasswordRequired && !rt.siteAuthOk) {
+    return <SitePasswordGate />
+  }
+
+  return <MicrositeRoutes />
+}
+
+function MicrositeRoutes() {
   const m = useMicrositeWorkflow()
   const isEditing = m.phase === 'editing'
   const [bannerCacheKey, setBannerCacheKey] = useState(0)
@@ -43,6 +63,7 @@ export default function App() {
             <SessionHeader
               brandName={m.brandName}
               remainingSeconds={m.remaining}
+              showTimer={m.showSessionTimer}
               onFinish={m.openFinishModal}
               onLeave={m.openLeaveConfirm}
               uploadBusy={m.uploadBusy}

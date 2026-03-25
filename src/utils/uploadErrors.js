@@ -9,6 +9,9 @@ export function friendlyUploadFailure(res, data) {
   if (res.status === 503 && data?.code === 'DROPBOX_NOT_CONFIGURED') {
     return msg || 'Cloud save is not set up on this server yet.'
   }
+  if (res.status === 401 && data?.code === 'SITE_AUTH_REQUIRED') {
+    return msg || 'Session expired. Refresh the page and sign in again.'
+  }
   if (res.status === 503 && data?.code === 'DROPBOX_TOKEN_EXPIRED') {
     return (
       msg ||

@@ -8,4 +8,5 @@ const app = createApp()
 app.listen(port, '127.0.0.1', () => {
   console.log(`Upload API http://127.0.0.1:${port}`)
   console.log(`Dropbox OAuth (one-time) http://127.0.0.1:${port}${OAUTH_DROPBOX_START}`)
+  console.log(`Public config GET http://127.0.0.1:${port}/api/config`)
 })

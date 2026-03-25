@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { requireSiteGate } from '../middleware/requireSiteGate.js'
 import { uploadSingleDesign } from '../middleware/upload.js'
 import { getDropboxClient } from '../dropbox/client.js'
 import { buildDropboxFilePath, ensureImageExtension, safeFilename } from '../utils/filename.js'
@@ -24,7 +25,7 @@ function isDropboxTokenExpired(err) {
 export function createUploadRouter() {
   const router = Router()
 
-  router.post('/upload', uploadSingleDesign, async (req, res) => {
+  router.post('/upload', requireSiteGate, uploadSingleDesign, async (req, res) => {
     try {
       const dbx = getDropboxClient()
       if (!dbx) {

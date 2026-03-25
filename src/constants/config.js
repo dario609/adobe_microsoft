@@ -1,7 +1,7 @@
-export const SESSION_SECONDS = Math.max(
-  60,
-  parseInt(import.meta.env.VITE_SESSION_SECONDS || '900', 10) || 900
-)
+/**
+ * Session length and whether the countdown shows are controlled by the API (`GET /api/config`)
+ * from server env: SESSION_SECONDS, SHOW_SESSION_TIMER. Optional Vite fallbacks if the API is down.
+ */
 
 export const BRAND_NAME = import.meta.env.VITE_BRAND_NAME || 'Create & Share'
 

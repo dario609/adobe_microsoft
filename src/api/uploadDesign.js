@@ -9,7 +9,7 @@ export async function uploadDesignToServer(blob, baseName) {
 
   let res
   try {
-    res = await fetch('/api/upload', { method: 'POST', body: fd })
+    res = await fetch('/api/upload', { method: 'POST', body: fd, credentials: 'include' })
   } catch {
     throw new Error(friendlyNetworkFailure())
   }
