@@ -52,6 +52,12 @@
 
 body {
   margin: 0;
+  overflow-x: hidden;
+}
+
+html {
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 #root {
@@ -65,12 +71,15 @@ body {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: visible;
 }
 
-/* Lets the microsite editing layout fill the viewport (Adobe host needs a real height). */
+/* Grow with content so banner + editor can scroll vertically when taller than the viewport. */
 #root > .appRoot {
-  flex: 1;
-  min-height: 0;
+  flex: 1 0 auto;
+  min-height: 100dvh;
+  min-height: 100svh;
   display: flex;
   flex-direction: column;
 }

@@ -5,6 +5,7 @@ import { FileNameModal } from './components/microsite/FileNameModal.jsx'
 import { LandingHero } from './components/microsite/LandingHero.jsx'
 import { MicrositeHeader } from './components/microsite/MicrositeHeader.jsx'
 import { NoticeBanner } from './components/microsite/NoticeBanner.jsx'
+import { SessionBanner } from './components/microsite/SessionBanner.jsx'
 import { SessionHeader } from './components/microsite/SessionHeader.jsx'
 import { LeaveConfirmModal } from './components/microsite/LeaveConfirmModal.jsx'
 import { UploadOverlay } from './components/microsite/UploadOverlay.jsx'
@@ -47,6 +48,7 @@ export default function App() {
               <ErrorBanner message={m.error} />
             </div>
             {m.banner ? <NoticeBanner>{m.banner}</NoticeBanner> : null}
+            <SessionBanner />
             <ExpressEditorHost isActive />
           </>
         )}
