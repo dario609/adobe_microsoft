@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { RuntimeConfigContext } from './runtimeConfigContext.js'
-import { apiUrl } from '../api/apiBase.js'
+import { apiFetch, setSiteGateToken } from '../api/apiFetch.js'
 
 function clientFallbackTimer() {
   const raw = import.meta.env.VITE_SESSION_SECONDS
@@ -28,8 +28,8 @@ export function RuntimeConfigProvider({ children }) {
 
     try {
       const [cRes, aRes] = await Promise.all([
-        fetch(apiUrl('/api/config'), { credentials: 'include' }),
-        fetch(apiUrl('/api/auth/site'), { credentials: 'include' }),
+        apiFetch('/api/config'),
+        apiFetch('/api/auth/site'),
       ])
       if (cRes.ok) {
         const c = await cRes.json()
@@ -62,15 +62,17 @@ export function RuntimeConfigProvider({ children }) {
 
   const loginSite = useCallback(
     async (password) => {
-      const res = await fetch(apiUrl('/api/auth/site/login'), {
+      const res = await apiFetch('/api/auth/site/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ password }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
         throw new Error(typeof data.error === 'string' ? data.error : 'Sign-in failed.')
+      }
+      if (typeof data.token === 'string' && data.token.trim()) {
+        setSiteGateToken(data.token.trim())
       }
       await refresh()
     },

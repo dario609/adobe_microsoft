@@ -44,7 +44,8 @@ export function createSiteAuthRouter() {
     }
     const token = createGateToken()
     setGateCookieHeader(res, token)
-    return res.json({ ok: true })
+    // Return token so cross-site setups can use header auth (cookies may be blocked).
+    return res.json({ ok: true, token })
   })
 
   router.post('/auth/site/logout', (_req, res) => {

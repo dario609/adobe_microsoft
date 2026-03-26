@@ -1,6 +1,6 @@
 import { safeBaseName } from '../utils/dataUrl.js'
 import { friendlyNetworkFailure, friendlyUploadFailure } from '../utils/uploadErrors.js'
-import { apiUrl } from './apiBase.js'
+import { apiFetch } from './apiFetch.js'
 
 export async function uploadDesignToServer(blob, baseName) {
   const fd = new FormData()
@@ -10,7 +10,7 @@ export async function uploadDesignToServer(blob, baseName) {
 
   let res
   try {
-    res = await fetch(apiUrl('/api/upload'), { method: 'POST', body: fd, credentials: 'include' })
+    res = await apiFetch('/api/upload', { method: 'POST', body: fd })
   } catch {
     throw new Error(friendlyNetworkFailure())
   }

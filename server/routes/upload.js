@@ -22,6 +22,17 @@ function isDropboxTokenExpired(err) {
   return /expired_access_token/.test(blob)
 }
 
+/** @param {unknown} err */
+function readDropboxSummary(err) {
+  try {
+    if (err?.name !== 'DropboxResponseError') return ''
+    const sum = err?.error?.error_summary
+    return typeof sum === 'string' ? sum : ''
+  } catch {
+    return ''
+  }
+}
+
 export function createUploadRouter() {
   const router = Router()
 
@@ -60,6 +71,15 @@ export function createUploadRouter() {
             'Dropbox access expired on the server. Ask your administrator to reconnect Dropbox (refresh token or new OAuth).',
           code: 'DROPBOX_TOKEN_EXPIRED',
           detail: DROPBOX_TOKEN_EXPIRED_DETAIL,
+        })
+      }
+      if (err?.name === 'DropboxResponseError' && err.status === 400) {
+        const summary = readDropboxSummary(err)
+        return res.status(500).json({
+          error:
+            'Dropbox rejected the upload request. This is usually caused by an invalid Dropbox path or app-folder permissions.',
+          code: 'DROPBOX_BAD_REQUEST',
+          detail: summary || undefined,
         })
       }
       res.status(500).json({ error: err?.message || 'Upload failed.' })
