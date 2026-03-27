@@ -11,17 +11,12 @@ export function RuntimeConfigProvider({ children }) {
 
   const refreshAuth = useCallback(async () => {
     try {
-      const res = await apiFetch(`/api/auth/site?ts=${Date.now()}`, {
-        cache: 'no-store',
-      })
-      if (!res.ok) {
-        setSiteAuthOk(false)
-        return
-      }
+      const res = await apiFetch(`/api/auth/site?ts=${Date.now()}`, { cache: 'no-store' })
+      if (!res.ok) return
       const data = await res.json()
       setSiteAuthOk(Boolean(data?.ok))
     } catch {
-      setSiteAuthOk(false)
+      // Keep last known auth state on transient Safari errors.
     }
   }, [])
 
@@ -33,13 +28,14 @@ export function RuntimeConfigProvider({ children }) {
       const cfg = await cfgRes.json()
       setSessionSeconds(Number(cfg.sessionSeconds) || 0)
       setShowSessionTimer(Boolean(cfg.showSessionTimer))
-      const req = Boolean(cfg.sitePasswordRequired)
-      setSitePasswordRequired(req)
-      if (!req) {
+
+      const required = Boolean(cfg.sitePasswordRequired)
+      setSitePasswordRequired(required)
+      if (!required) {
         setSiteAuthOk(true)
-        return
+      } else {
+        await refreshAuth()
       }
-      await refreshAuth()
     } catch (e) {
       console.error('RuntimeConfig:', e)
       setSitePasswordRequired(false)
@@ -56,24 +52,22 @@ export function RuntimeConfigProvider({ children }) {
     return () => clearTimeout(t)
   }, [refresh])
 
-  const loginSite = useCallback(
-    async (password) => {
-      const res = await apiFetch('/api/auth/site/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        throw new Error(typeof data?.error === 'string' ? data.error : 'Sign in failed.')
-      }
-      if (data?.token) {
-        setSiteGateToken(data.token)
-      }
-      await refreshAuth()
-    },
-    [refreshAuth]
-  )
+  const loginSite = useCallback(async (password) => {
+    const res = await apiFetch('/api/auth/site/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      throw new Error(typeof data?.error === 'string' ? data.error : 'Sign in failed.')
+    }
+    if (data?.token) {
+      setSiteGateToken(data.token)
+    }
+    // Unlock immediately on successful password match.
+    setSiteAuthOk(true)
+  }, [])
 
   const value = useMemo(
     () => ({
