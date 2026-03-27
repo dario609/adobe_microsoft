@@ -25,6 +25,7 @@ export function LandingHero({
       </div>
       <p className="landHero__status" aria-live="polite">
         {status === 'loading' && <span>Connecting to Adobe Express…</span>}
+        {status === 'ready' && <span>Choose a template and press Start.</span>}
         {status === 'error' && (
           <span>
             Could not load Adobe. Check <code>VITE_ADOBE_CLIENT_ID</code> and that this site URL is allowed in your Adobe project.

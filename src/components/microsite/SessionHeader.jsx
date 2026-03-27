@@ -1,9 +1,7 @@
 import { formatClock } from '../../utils/time.js'
-import { BRAND_LOGO_URL } from '../../constants/config.js'
 import { HeaderBanner } from './HeaderBanner.jsx'
 
 export function SessionHeader({
-  brandName,
   remainingSeconds,
   showTimer,
   onFinish,
@@ -16,8 +14,6 @@ export function SessionHeader({
   return (
     <header className="sessionHeader" role="banner">
       <div className="sessionHeader__brandRow">
-        <img className="sessionHeader__logo" src={BRAND_LOGO_URL} alt="" width={40} height={40} decoding="async" />
-        <span className="sessionHeader__brand">{brandName}</span>
         <HeaderBanner cacheKey={bannerCacheKey} />
       </div>
       <div className="sessionHeader__actions">

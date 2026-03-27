@@ -48,13 +48,11 @@ function MicrositeRoutes() {
       <div className={`shell${isEditing ? ' shell--editing' : ' shell--landing'}`}>
         {!isEditing ? (
           <>
-            <MicrositeHeader brandName={m.brandName} />
+            <MicrositeHeader />
             <LandingHero
               status={m.status}
               onStart={m.startEditor}
               canStart={m.canStart}
-              requireAdobeTemplate={m.requireAdobeTemplate}
-              templateConfigured={m.templateConfigured}
               onGallerySelectionChange={() => setGalleryCacheKey((k) => k + 1)}
             />
             <div className="shell__errors">
@@ -67,7 +65,6 @@ function MicrositeRoutes() {
         ) : (
           <>
             <SessionHeader
-              brandName={m.brandName}
               remainingSeconds={m.remaining}
               showTimer={m.showSessionTimer}
               onFinish={m.openFinishModal}

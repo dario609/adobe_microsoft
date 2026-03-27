@@ -124,7 +124,7 @@
 .appRoot--landing {
   justify-content: center;
   align-items: stretch;
-  background: radial-gradient(circle at 20% 0%, #fff2f2 0%, #fef7f0 30%, #f4f7ff 70%, #eef2ff 100%);
+  background: #ffffff;
 }
 
 .appRoot--editing {
@@ -147,7 +147,7 @@
 
 @media (prefers-color-scheme: dark) {
   .appRoot--landing {
-    background: radial-gradient(circle at 20% 0%, #25161a 0%, #1f1a2c 46%, #12131a 100%);
+    background: #ffffff;
   }
 }
 
@@ -560,6 +560,7 @@
   gap: 10px;
   min-width: 0;
   flex: 1;
+  min-height: 40px;
 }
 
 .sessionHeader__brand {
@@ -827,6 +828,55 @@
 
 .adminGallery__remove {
   align-self: stretch;
+}
+
+.adminSettings__ok {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border: 1px solid #86efac;
+  border-radius: 10px;
+  background: #f0fdf4;
+  color: #14532d;
+  font-size: 0.875rem;
+}
+
+.adminSettings__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.adminSettings__card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.adminSettings__label {
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.adminSettings__input {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 11px;
+  font: inherit;
+  font-size: 0.95rem;
+  color: #0f172a;
+  background: #fff;
+}
+
+.adminSettings__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #0f172a;
+  font-size: 0.9rem;
 }
 
 .sessionHeader__leave {
@@ -1111,8 +1161,16 @@
 }
 
 .btn--primary {
-  background: var(--text-h);
-  color: var(--bg);
+  border: none;
+  color: #ffffff;
+  background: linear-gradient(92deg, #ef4444 0%, #f97316 30%, #a855f7 60%, #2563eb 100%);
+  box-shadow:
+    0 12px 24px rgba(168, 85, 247, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.btn--primary:not(:disabled):hover {
+  filter: saturate(1.05) brightness(1.02);
 }
 
 .btn--primary:not(:disabled):active {

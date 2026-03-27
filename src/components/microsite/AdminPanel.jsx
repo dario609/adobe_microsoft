@@ -1,4 +1,5 @@
 import { AdminGalleryPanel } from './AdminGalleryPanel.jsx'
+import { AdminSettingsPanel } from './AdminSettingsPanel.jsx'
 
 export function AdminPanel() {
   return (
@@ -15,6 +16,7 @@ export function AdminPanel() {
         </p>
         <AdminGalleryPanel />
       </section>
+      <AdminSettingsPanel />
     </main>
   )
 }
