@@ -1,12 +1,21 @@
 import { USER_FLOW_STEPS } from '../../constants/flow.js'
+import { LandingGallery } from './LandingGallery.jsx'
 
-export function LandingHero({ status, onStart, canStart, requireAdobeTemplate, templateConfigured }) {
+export function LandingHero({
+  status,
+  onStart,
+  canStart,
+  requireAdobeTemplate,
+  templateConfigured,
+  onGallerySelectionChange,
+}) {
   const startDisabled = !canStart
   const startLabel =
     status === 'loading' ? 'Preparing…' : status === 'error' ? 'Unavailable' : 'Start'
 
   return (
     <section className="landHero" aria-label="Session">
+      <LandingGallery onSelectionChange={onGallerySelectionChange} />
       <ol className="landHero__steps">
         {USER_FLOW_STEPS.map((step) => (
           <li key={step}>{step}</li>

@@ -41,7 +41,7 @@ export default function App() {
 function MicrositeRoutes() {
   const m = useMicrositeWorkflow()
   const isEditing = m.phase === 'editing'
-  const [bannerCacheKey] = useState(0)
+  const [galleryCacheKey, setGalleryCacheKey] = useState(0)
 
   return (
     <div className={`appRoot${isEditing ? ' appRoot--editing' : ' appRoot--landing'}`}>
@@ -55,6 +55,7 @@ function MicrositeRoutes() {
               canStart={m.canStart}
               requireAdobeTemplate={m.requireAdobeTemplate}
               templateConfigured={m.templateConfigured}
+              onGallerySelectionChange={() => setGalleryCacheKey((k) => k + 1)}
             />
             <div className="shell__errors">
               <ErrorBanner message={m.error} />
@@ -72,7 +73,7 @@ function MicrositeRoutes() {
               onFinish={m.openFinishModal}
               onLeave={m.openLeaveConfirm}
               uploadBusy={m.uploadBusy}
-              bannerCacheKey={bannerCacheKey}
+              bannerCacheKey={galleryCacheKey}
             />
             <div className="shell__errors shell__errors--session">
               <ErrorBanner message={m.error} />

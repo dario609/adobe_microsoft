@@ -8,6 +8,7 @@ import { tryAutomatePublishExport } from '../adobe/tryAutomatePublishExport.js'
 import { FINISH_AFTER_NAME_BANNER } from '../constants/flow.js'
 import { blobFromAdobeExport, getPublishAssetPayload } from '../utils/adobeAsset.js'
 import { friendlyExportFailure } from '../utils/uploadErrors.js'
+import { clearGalleryPick } from '../constants/gallerySelection.js'
 
 export function useMicrositeWorkflow() {
   const { sessionSeconds, showSessionTimer } = useRuntimeConfig()
@@ -32,6 +33,7 @@ export function useMicrositeWorkflow() {
   }, [sessionSeconds])
 
   const resetForNextUser = useCallback(async () => {
+    clearGalleryPick()
     setShowLeaveConfirm(false)
     setError('')
     setBanner('')
