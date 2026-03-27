@@ -124,7 +124,7 @@
 .appRoot--landing {
   justify-content: center;
   align-items: stretch;
-  background: linear-gradient(180deg, #fafaff 0%, #f5f3ff 55%, #ede9fe 100%);
+  background: radial-gradient(circle at 20% 0%, #fff2f2 0%, #fef7f0 30%, #f4f7ff 70%, #eef2ff 100%);
 }
 
 .appRoot--editing {
@@ -147,7 +147,7 @@
 
 @media (prefers-color-scheme: dark) {
   .appRoot--landing {
-    background: linear-gradient(180deg, #12131a 0%, #16151f 45%, #1a1528 100%);
+    background: radial-gradient(circle at 20% 0%, #25161a 0%, #1f1a2c 46%, #12131a 100%);
   }
 }
 
@@ -326,9 +326,11 @@
 /* ——— Landing header ——— */
 .landHeader {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
   gap: 14px;
-  margin-bottom: 28px;
+  margin-bottom: 22px;
+  text-align: center;
 }
 
 .landHeader__logo {
@@ -340,28 +342,26 @@
 }
 
 .landHeader__title {
-  margin: 0 0 6px;
-  font-size: clamp(1.5rem, 5vw, 1.85rem);
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
-  color: var(--text-h);
-}
-
-.landHeader__sub {
   margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.45;
-  color: var(--text);
+  font-size: clamp(1.9rem, 6vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  background: linear-gradient(92deg, #ef4444 0%, #f97316 26%, #a855f7 58%, #2563eb 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 /* ——— Landing hero ——— */
 .landHero {
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 22px 20px 24px;
-  background: color-mix(in srgb, var(--bg) 100%, var(--text-h) 1.5%);
-  box-shadow: var(--shadow);
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 20px 18px 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow:
+    0 16px 40px rgba(15, 23, 42, 0.08),
+    0 2px 8px rgba(15, 23, 42, 0.05);
 }
 
 .landHero__steps {
@@ -381,7 +381,7 @@
 }
 
 .landHero__cta {
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .landHero__status {
@@ -400,7 +400,7 @@
 
 /* ——— Landing gallery carousel ——— */
 .landGallery {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .landGallery__title {
@@ -436,24 +436,38 @@
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .landGallery__navBtn {
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   border-radius: 999px;
-  border: 1px solid var(--border);
-  background: #fff;
-  color: var(--text-h);
-  font-size: 1.25rem;
-  line-height: 1;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  line-height: 0;
   cursor: pointer;
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.landGallery__navBtn:not(:disabled):hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
 }
 
 .landGallery__navBtn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+
+.landGallery__navIcon {
+  font-size: 1.1rem;
+  font-weight: 900;
+  display: inline-block;
+  transform: translateY(-1px);
 }
 
 .landGallery__rail {
@@ -494,10 +508,11 @@
 }
 
 .landGallery__thumbBtn--active {
-  border-color: #7c3aed;
+  border-width: 3px;
+  border-color: #ef4444;
   box-shadow:
-    0 0 0 2px rgba(124, 58, 237, 0.2),
-    0 8px 20px rgba(124, 58, 237, 0.22);
+    0 0 0 2px rgba(248, 113, 113, 0.25),
+    0 10px 24px rgba(239, 68, 68, 0.24);
 }
 
 .landGallery__thumb {

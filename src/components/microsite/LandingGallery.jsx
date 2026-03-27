@@ -75,8 +75,6 @@ export function LandingGallery({ onSelectionChange }) {
 
   return (
     <div className="landGallery">
-      <h2 className="landGallery__title">Choose a header image</h2>
-      <p className="landGallery__hint">Tap an image to use it above the editor, then press Start.</p>
       {error ? <p className="landGallery__error">{error}</p> : null}
       {loading ? <p className="landGallery__muted">Loading images…</p> : null}
       {!loading && items.length === 0 ? (
@@ -91,7 +89,9 @@ export function LandingGallery({ onSelectionChange }) {
             onClick={() => scrollRail(-1)}
             disabled={!canScrollLeft}
           >
-            ‹
+            <span className="landGallery__navIcon" aria-hidden="true">
+              &#10094;
+            </span>
           </button>
           <ul className="landGallery__rail" role="list" ref={railRef}>
             {items.map((it) => {
@@ -118,7 +118,9 @@ export function LandingGallery({ onSelectionChange }) {
             onClick={() => scrollRail(1)}
             disabled={!canScrollRight}
           >
-            ›
+            <span className="landGallery__navIcon" aria-hidden="true">
+              &#10095;
+            </span>
           </button>
         </div>
       ) : null}
