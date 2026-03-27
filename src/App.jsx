@@ -1,6 +1,6 @@
 import './App.css'
 import { useState } from 'react'
-import { BannerHeroUpload } from './components/microsite/BannerHeroUpload.jsx'
+import { AdminPanel } from './components/microsite/AdminPanel.jsx'
 import { ExpressEditorHost } from './components/microsite/ExpressEditorHost.jsx'
 import { ErrorBanner } from './components/microsite/ErrorBanner.jsx'
 import { FileNameModal } from './components/microsite/FileNameModal.jsx'
@@ -8,7 +8,6 @@ import { LandingHero } from './components/microsite/LandingHero.jsx'
 import { LeaveConfirmModal } from './components/microsite/LeaveConfirmModal.jsx'
 import { MicrositeHeader } from './components/microsite/MicrositeHeader.jsx'
 import { NoticeBanner } from './components/microsite/NoticeBanner.jsx'
-import { SessionBanner } from './components/microsite/SessionBanner.jsx'
 import { SessionHeader } from './components/microsite/SessionHeader.jsx'
 import { SitePasswordGate } from './components/microsite/SitePasswordGate.jsx'
 import { IOSExpressNotice } from './components/microsite/IOSExpressNotice.jsx'
@@ -18,6 +17,7 @@ import { useMicrositeWorkflow } from './hooks/useMicrositeWorkflow.js'
 
 export default function App() {
   const rt = useRuntimeConfig()
+  const isAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')
 
   if (!rt.ready) {
     return (
@@ -27,8 +27,12 @@ export default function App() {
     )
   }
 
-  if (rt.sitePasswordRequired && !rt.siteAuthOk) {
+  if (!isAdminPath && rt.sitePasswordRequired && !rt.siteAuthOk) {
     return <SitePasswordGate />
+  }
+
+  if (isAdminPath) {
+    return <AdminPanel />
   }
 
   return <MicrositeRoutes />
@@ -37,7 +41,7 @@ export default function App() {
 function MicrositeRoutes() {
   const m = useMicrositeWorkflow()
   const isEditing = m.phase === 'editing'
-  const [bannerCacheKey, setBannerCacheKey] = useState(0)
+  const [bannerCacheKey] = useState(0)
 
   return (
     <div className={`appRoot${isEditing ? ' appRoot--editing' : ' appRoot--landing'}`}>
@@ -68,17 +72,13 @@ function MicrositeRoutes() {
               onFinish={m.openFinishModal}
               onLeave={m.openLeaveConfirm}
               uploadBusy={m.uploadBusy}
+              bannerCacheKey={bannerCacheKey}
             />
             <div className="shell__errors shell__errors--session">
               <ErrorBanner message={m.error} />
             </div>
             <IOSExpressNotice />
             {m.banner ? <NoticeBanner>{m.banner}</NoticeBanner> : null}
-            <BannerHeroUpload
-              onUploaded={() => setBannerCacheKey((k) => k + 1)}
-              disabled={m.uploadBusy}
-            />
-            <SessionBanner key={bannerCacheKey} cacheKey={bannerCacheKey} />
             <ExpressEditorHost isActive />
           </>
         )}

@@ -3,6 +3,7 @@ import { requireSiteGate } from '../middleware/requireSiteGate.js'
 import { uploadSingleDesign } from '../middleware/upload.js'
 import { getDropboxClient } from '../dropbox/client.js'
 import { buildDropboxFilePath, ensureImageExtension, safeFilename } from '../utils/filename.js'
+import { appendUploadHistory } from '../utils/uploadHistory.js'
 
 /** Shown to guests in the app UI (non-technical). */
 const DROPBOX_NOT_READY_USER =
@@ -60,6 +61,13 @@ export function createUploadRouter() {
         path: dropboxPath,
         contents: buffer,
         mode: { '.tag': 'overwrite' },
+      })
+
+      await appendUploadHistory({
+        fileName: filename,
+        dropboxPath,
+        bytes: buffer.length,
+        uploadedAt: new Date().toISOString(),
       })
 
       res.json({ ok: true, path: dropboxPath })

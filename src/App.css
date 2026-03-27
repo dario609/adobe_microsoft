@@ -445,6 +445,17 @@
   white-space: nowrap;
 }
 
+.sessionHeader__heroImg {
+  margin-left: 8px;
+  height: 40px;
+  width: auto;
+  max-width: 180px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+
 .sessionHeader__actions {
   display: flex;
   align-items: center;
@@ -452,6 +463,92 @@
   flex-wrap: wrap;
   gap: 10px;
   row-gap: 8px;
+}
+
+/* ——— Admin panel ——— */
+.adminRoot {
+  min-height: 100svh;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px max(16px, env(safe-area-inset-right)) 28px max(16px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-sizing: border-box;
+}
+
+.adminCard {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.adminCard__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.adminCard__title {
+  margin: 0;
+  color: var(--text-h);
+  font-size: 1.125rem;
+}
+
+.adminCard__title--small {
+  font-size: 1rem;
+}
+
+.adminCard__sub {
+  margin: 8px 0 10px;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.adminTableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.adminTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.adminTable th,
+.adminTable td {
+  text-align: left;
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.875rem;
+}
+
+.adminTable th {
+  background: #f8fafc;
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.adminTable tr:last-child td {
+  border-bottom: none;
+}
+
+.adminTable__path {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+
+.adminTable__empty {
+  margin: 0;
+  padding: 16px 12px;
+  color: var(--text);
 }
 
 .sessionHeader__leave {
