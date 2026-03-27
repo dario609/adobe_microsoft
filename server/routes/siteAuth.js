@@ -20,6 +20,14 @@ function constantTimeEqual(a, b) {
 export function createSiteAuthRouter() {
   const router = Router()
 
+  router.use('/auth/site', (_req, res, next) => {
+    // Prevent stale auth status caching on Safari/iPad.
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private')
+    res.setHeader('Pragma', 'no-cache')
+    res.setHeader('Expires', '0')
+    next()
+  })
+
   router.get('/auth/site', (req, res) => {
     const cfg = getSitePasswordConfig()
     if (!cfg.required) {

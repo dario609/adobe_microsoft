@@ -11,7 +11,9 @@ export function RuntimeConfigProvider({ children }) {
 
   const refreshAuth = useCallback(async () => {
     try {
-      const res = await apiFetch('/api/auth/site')
+      const res = await apiFetch(`/api/auth/site?ts=${Date.now()}`, {
+        cache: 'no-store',
+      })
       if (!res.ok) {
         setSiteAuthOk(false)
         return
