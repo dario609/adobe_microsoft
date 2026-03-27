@@ -716,9 +716,9 @@
   justify-content: center;
   padding: 10px 16px;
   border-radius: 10px;
-  border: 1px solid #334155;
-  background: #ffffff;
-  color: #0f172a;
+  border: 1px solid transparent;
+  background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
+  color: #ffffff;
   font-weight: 600;
   font-size: 0.9rem;
   text-decoration: none;
@@ -727,7 +727,7 @@
 }
 
 .btn--outlineDark:hover {
-  background: #f8fafc;
+  filter: brightness(1.08);
 }
 
 .adminGallery {

@@ -8,6 +8,18 @@ async function parseResponse(res) {
   return { error: text || `Request failed (${res.status}).` }
 }
 
+function toFriendlyError(res, data, fallback) {
+  const raw = String(data?.error || '')
+  if (
+    raw.includes('<!DOCTYPE') ||
+    raw.includes('<pre>') ||
+    /Cannot\s+(GET|POST|PUT|PATCH|DELETE)\s+\//i.test(raw)
+  ) {
+    return 'Settings API route is missing on the deployed backend. Redeploy the latest server build (with /api/config/session and /api/config/site-password routes).'
+  }
+  return raw || fallback
+}
+
 export function AdminSettingsPanel() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -23,7 +35,7 @@ export function AdminSettingsPanel() {
       try {
         const res = await apiFetch('/api/config', { cache: 'no-store' })
         const data = await parseResponse(res)
-        if (!res.ok) throw new Error(data?.error || 'Could not load settings.')
+        if (!res.ok) throw new Error(toFriendlyError(res, data, 'Could not load settings.'))
         setSessionSeconds(Number(data?.sessionSeconds) || 0)
         setPasswordEnabled(Boolean(data?.sitePasswordEnabled))
       } catch (e) {
@@ -46,7 +58,7 @@ export function AdminSettingsPanel() {
         body: JSON.stringify({ sessionSeconds: Number(sessionSeconds) || 0 }),
       })
       const data = await parseResponse(res)
-      if (!res.ok) throw new Error(data?.error || 'Could not save timer.')
+      if (!res.ok) throw new Error(toFriendlyError(res, data, 'Could not save timer.'))
       setSessionSeconds(Number(data?.sessionSeconds) || 0)
       setMsg('Timer updated.')
     } catch (e) {
@@ -70,7 +82,7 @@ export function AdminSettingsPanel() {
         body: JSON.stringify(payload),
       })
       const data = await parseResponse(res)
-      if (!res.ok) throw new Error(data?.error || 'Could not save password settings.')
+      if (!res.ok) throw new Error(toFriendlyError(res, data, 'Could not save password settings.'))
       setPasswordEnabled(Boolean(data?.sitePasswordEnabled))
       setPassword('')
       setMsg('Password settings updated.')
