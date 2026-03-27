@@ -201,6 +201,33 @@
   box-sizing: border-box;
 }
 
+.shell--editing > .iosExpressNotice {
+  width: 100%;
+  max-width: var(--editor-boundary-max);
+  margin: 8px auto 0;
+  box-sizing: border-box;
+}
+
+.iosExpressNotice {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-h);
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, #2563eb 38%, var(--border));
+  background: color-mix(in srgb, #2563eb 9%, var(--bg));
+}
+
+.iosExpressNotice__text {
+  margin: 0;
+}
+
+.iosExpressNotice strong {
+  font-weight: 600;
+}
+
 /* Operator: upload PNG for hero above Express */
 .shell--editing > .sessionBannerUpload {
   width: 100%;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { apiFetch } from '../../api/apiFetch.js'
+import { apiFetch, getSiteGateToken } from '../../api/apiFetch.js'
 
 /**
  * Loads banner via authenticated fetch (required on iPad / cross-origin where <img> cannot send gate headers).
@@ -20,7 +20,10 @@ export function SessionBanner({ cacheKey = 0 }) {
 
     ;(async () => {
       try {
-        const res = await apiFetch(`/api/banner?v=${cacheKey}`)
+        const qs = new URLSearchParams({ v: String(cacheKey) })
+        const gate = getSiteGateToken()
+        if (gate) qs.set('gate', gate)
+        const res = await apiFetch(`/api/banner?${qs}`, { cache: 'no-store' })
         if (res.status === 404) {
           if (!cancelled) setFailed(true)
           return

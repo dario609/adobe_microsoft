@@ -179,7 +179,17 @@ export function useMicrositeWorkflow() {
           },
           onError: (err) => {
             console.error('Editor error:', err)
-            setError('The editor hit a problem. Try refreshing the page or starting again.')
+            const detail =
+              err?.message ||
+              err?.error?.message ||
+              err?.reason ||
+              (typeof err === 'string' ? err : '')
+            const short = String(detail).slice(0, 220)
+            setError(
+              short
+                ? `${short} If this persists, refresh the page or confirm this site is in your Adobe API “allowed domains”.`
+                : 'The editor hit a problem. Try refreshing the page or starting again.'
+            )
           },
         },
       }
@@ -193,9 +203,9 @@ export function useMicrositeWorkflow() {
       }
     }
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(runCreate)
-    })
+    // iPad Safari requires the editor create call to stay in the same user-activation
+    // chain as the Start tap; double rAF can break the embed iframe.
+    runCreate()
   }, [status, resetForNextUser, sessionSeconds, showSessionTimer])
 
   const openFinishModal = useCallback(() => {

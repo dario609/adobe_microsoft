@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { apiFetch, setSiteGateToken } from '../api/apiFetch.js'
+import { apiFetch, getSiteGateToken, setSiteGateToken } from '../api/apiFetch.js'
 import { RuntimeConfigContext } from './runtimeConfigContext.js'
 
 export function RuntimeConfigProvider({ children }) {
@@ -11,7 +11,10 @@ export function RuntimeConfigProvider({ children }) {
 
   const refreshAuth = useCallback(async () => {
     try {
-      const res = await apiFetch(`/api/auth/site?ts=${Date.now()}`, { cache: 'no-store' })
+      const qs = new URLSearchParams({ ts: String(Date.now()) })
+      const gate = getSiteGateToken()
+      if (gate) qs.set('gate', gate)
+      const res = await apiFetch(`/api/auth/site?${qs}`, { cache: 'no-store' })
       if (!res.ok) return
       const data = await res.json()
       setSiteAuthOk(Boolean(data?.ok))

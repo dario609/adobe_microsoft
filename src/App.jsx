@@ -11,6 +11,7 @@ import { NoticeBanner } from './components/microsite/NoticeBanner.jsx'
 import { SessionBanner } from './components/microsite/SessionBanner.jsx'
 import { SessionHeader } from './components/microsite/SessionHeader.jsx'
 import { SitePasswordGate } from './components/microsite/SitePasswordGate.jsx'
+import { IOSExpressNotice } from './components/microsite/IOSExpressNotice.jsx'
 import { UploadOverlay } from './components/microsite/UploadOverlay.jsx'
 import { useRuntimeConfig } from './hooks/useRuntimeConfig.js'
 import { useMicrositeWorkflow } from './hooks/useMicrositeWorkflow.js'
@@ -71,6 +72,7 @@ function MicrositeRoutes() {
             <div className="shell__errors shell__errors--session">
               <ErrorBanner message={m.error} />
             </div>
+            <IOSExpressNotice />
             {m.banner ? <NoticeBanner>{m.banner}</NoticeBanner> : null}
             <BannerHeroUpload
               onUploaded={() => setBannerCacheKey((k) => k + 1)}

@@ -31,10 +31,21 @@ export async function getInitializedSdk() {
   const CCEverywhere = await loadCCEverywhere()
 
   if (!sdkInitPromise) {
+    const clientId = String(import.meta.env.VITE_ADOBE_CLIENT_ID || '').trim()
+    const appName = String(import.meta.env.VITE_ADOBE_APP_NAME || '').trim()
+    if (!clientId || !appName) {
+      throw new Error(
+        'Missing Adobe embed config. Set VITE_ADOBE_CLIENT_ID and VITE_ADOBE_APP_NAME (Vercel env / .env).'
+      )
+    }
+
+    // Adobe docs: full HostInfo improves compatibility (incl. Safari / iPad).
     sdkInitPromise = CCEverywhere.initialize(
       {
-        clientId: import.meta.env.VITE_ADOBE_CLIENT_ID,
-        appName: import.meta.env.VITE_ADOBE_APP_NAME,
+        clientId,
+        appName,
+        appVersion: { major: 1, minor: 0 },
+        platformCategory: 'web',
       },
       {
         loginMode: 'delayed',

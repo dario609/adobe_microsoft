@@ -49,6 +49,14 @@ export function readGateHeader(req) {
   return ''
 }
 
+/** Fallback for Safari/iPad when custom headers are not applied to some GETs. */
+export function readGateQuery(req) {
+  const q = req.query?.gate ?? req.query?.token
+  if (typeof q === 'string') return q.trim()
+  if (Array.isArray(q) && typeof q[0] === 'string') return q[0].trim()
+  return ''
+}
+
 export function readGateCookie(req) {
   const raw = req.headers.cookie
   if (!raw) return ''

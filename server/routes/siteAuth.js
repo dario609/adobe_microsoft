@@ -6,6 +6,7 @@ import {
   createGateToken,
   readGateCookie,
   readGateHeader,
+  readGateQuery,
   setGateCookieHeader,
   verifyGateToken,
 } from '../utils/siteGateToken.js'
@@ -33,7 +34,7 @@ export function createSiteAuthRouter() {
     if (!cfg.required) {
       return res.json({ ok: true, required: false })
     }
-    const token = readGateHeader(req) || readGateCookie(req)
+    const token = readGateHeader(req) || readGateCookie(req) || readGateQuery(req)
     res.json({ ok: verifyGateToken(token), required: true })
   })
 
