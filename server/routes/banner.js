@@ -7,6 +7,42 @@ import { bannerExists, deleteBanner, getBannerPath, writeBannerPng } from '../ut
 export function createBannerRouter() {
   const router = Router()
 
+  // Admin endpoints (no password gate by request).
+  router.get('/banner-admin', (_req, res) => {
+    const p = getBannerPath()
+    if (!fs.existsSync(p)) {
+      return res.status(404).type('text').send('No banner uploaded.')
+    }
+    res.setHeader('Cache-Control', 'no-store')
+    res.type('png')
+    return res.sendFile(p)
+  })
+
+  router.post('/banner-admin', (req, res) => {
+    uploadSessionBanner(req, res, async (err) => {
+      if (err) {
+        const msg = err.message || String(err)
+        return res.status(400).json({ error: msg })
+      }
+      const buf = req.file?.buffer
+      if (!buf?.length) {
+        return res.status(400).json({ error: 'Missing file field "banner".' })
+      }
+      try {
+        await writeBannerPng(buf)
+        return res.json({ ok: true })
+      } catch (e) {
+        console.error('Banner save:', e)
+        return res.status(500).json({ error: 'Could not save banner.' })
+      }
+    })
+  })
+
+  router.delete('/banner-admin', async (_req, res) => {
+    await deleteBanner()
+    res.json({ ok: true })
+  })
+
   router.get('/banner', requireSiteGate, (_req, res) => {
     const p = getBannerPath()
     if (!fs.existsSync(p)) {

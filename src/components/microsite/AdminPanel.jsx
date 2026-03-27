@@ -26,7 +26,7 @@ export function AdminPanel() {
     setError('')
     setLoading(true)
     try {
-      const res = await apiFetch('/api/admin/uploads', { cache: 'no-store' })
+      const res = await apiFetch('/api/uploads', { cache: 'no-store' })
       const data = await res.json().catch(() => null)
       if (!res.ok) {
         const msg = typeof data?.error === 'string' ? data.error : 'Could not load uploads.'
@@ -61,7 +61,7 @@ export function AdminPanel() {
           </p>
         ) : null}
         <BannerHeroUpload
-          apiPrefix="/api/admin"
+          apiPrefix="/api/banner-admin"
           onUploaded={() => setRefreshKey((k) => k + 1)}
           disabled={false}
         />

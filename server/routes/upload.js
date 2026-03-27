@@ -3,7 +3,7 @@ import { requireSiteGate } from '../middleware/requireSiteGate.js'
 import { uploadSingleDesign } from '../middleware/upload.js'
 import { getDropboxClient } from '../dropbox/client.js'
 import { buildDropboxFilePath, ensureImageExtension, safeFilename } from '../utils/filename.js'
-import { appendUploadHistory } from '../utils/uploadHistory.js'
+import { appendUploadHistory, listUploadHistory } from '../utils/uploadHistory.js'
 
 /** Shown to guests in the app UI (non-technical). */
 const DROPBOX_NOT_READY_USER =
@@ -36,6 +36,12 @@ function readDropboxSummary(err) {
 
 export function createUploadRouter() {
   const router = Router()
+
+  // Admin-facing uploads table (no gate by request).
+  router.get('/uploads', async (_req, res) => {
+    const items = await listUploadHistory()
+    res.json({ items })
+  })
 
   router.post('/upload', requireSiteGate, uploadSingleDesign, async (req, res) => {
     try {

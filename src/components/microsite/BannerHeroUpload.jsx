@@ -22,7 +22,8 @@ export function BannerHeroUpload({ onUploaded, disabled, apiPrefix = '/api' }) {
     try {
       const fd = new FormData()
       fd.append('banner', file)
-      const res = await apiFetch(`${apiPrefix}/banner`, { method: 'POST', body: fd })
+      const uploadPath = apiPrefix.endsWith('/banner') ? apiPrefix : `${apiPrefix}/banner`
+      const res = await apiFetch(uploadPath, { method: 'POST', body: fd })
       if (!res.ok) {
         throw new Error(await readErrorMessage(res, 'Upload failed'))
       }
@@ -39,7 +40,8 @@ export function BannerHeroUpload({ onUploaded, disabled, apiPrefix = '/api' }) {
     setError('')
     setBusy(true)
     try {
-      const res = await apiFetch(`${apiPrefix}/banner`, { method: 'DELETE' })
+      const removePath = apiPrefix.endsWith('/banner') ? apiPrefix : `${apiPrefix}/banner`
+      const res = await apiFetch(removePath, { method: 'DELETE' })
       if (!res.ok) {
         throw new Error(await readErrorMessage(res, 'Remove failed'))
       }
