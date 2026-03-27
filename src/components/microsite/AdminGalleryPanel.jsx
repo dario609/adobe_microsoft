@@ -18,7 +18,7 @@ function apiFailureMessage(res, data) {
     raw.includes('<pre>') ||
     /Cannot\s+(GET|POST|DELETE)\s+\//i.test(raw)
   ) {
-    return 'The API does not expose this route (often an outdated deploy). On Render: Start Command must be npm start, redeploy the latest code, and on Vercel set VITE_API_BASE_URL to your Render service URL (e.g. https://your-service.onrender.com).'
+    return 'Gallery API missing on the server (redeploy Render with npm start), or the browser is not reaching it. On Vercel set API_BACKEND_URL to your Render origin (same URL as in VITE_API_BASE_URL), or set VITE_API_BASE_URL to that Render URL and redeploy the frontend.'
   }
   return err || raw || `Request failed (${res.status}).`
 }
