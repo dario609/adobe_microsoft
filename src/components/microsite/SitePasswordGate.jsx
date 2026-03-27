@@ -35,6 +35,10 @@ export function SitePasswordGate() {
             className="siteGate__input"
             type="password"
             autoComplete="current-password"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck="false"
+            enterKeyHint="go"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={busy}

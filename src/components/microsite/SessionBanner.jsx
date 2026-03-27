@@ -1,22 +1,53 @@
-import { useState } from 'react'
-import { apiUrl } from '../../api/apiBase.js'
+import { useEffect, useState } from 'react'
+import { apiFetch } from '../../api/apiFetch.js'
 
 /**
- * Shows PNG from GET /api/banner when the operator has uploaded one (POST /api/banner).
- * Parent should set `key={bannerCacheKey}` when bumping after upload/remove so state resets.
- * @param {number} [cacheKey] — query string cache-bust (keep in sync with `key`).
+ * Loads banner via authenticated fetch (required on iPad / cross-origin where <img> cannot send gate headers).
+ * @param {number} [cacheKey] — bump to refetch after upload/remove.
  */
 export function SessionBanner({ cacheKey = 0 }) {
   const [failed, setFailed] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const [objectUrl, setObjectUrl] = useState('')
 
-  if (failed) return null
+  useEffect(() => {
+    let cancelled = false
+    let blobUrl = ''
+
+    setLoaded(false)
+    setFailed(false)
+    setObjectUrl('')
+
+    ;(async () => {
+      try {
+        const res = await apiFetch(`/api/banner?v=${cacheKey}`)
+        if (res.status === 404) {
+          if (!cancelled) setFailed(true)
+          return
+        }
+        if (!res.ok) throw new Error('banner')
+        const blob = await res.blob()
+        if (cancelled) return
+        blobUrl = URL.createObjectURL(blob)
+        setObjectUrl(blobUrl)
+      } catch {
+        if (!cancelled) setFailed(true)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+      if (blobUrl) URL.revokeObjectURL(blobUrl)
+    }
+  }, [cacheKey])
+
+  if (failed || !objectUrl) return null
 
   return (
     <figure className={`sessionBanner${loaded ? ' sessionBanner--loaded' : ''}`} aria-hidden={!loaded}>
       <img
         className="sessionBanner__img"
-        src={apiUrl(`/api/banner?v=${cacheKey}`)}
+        src={objectUrl}
         alt=""
         decoding="async"
         onLoad={() => setLoaded(true)}

@@ -38,6 +38,17 @@ export function verifyGateToken(token) {
   }
 }
 
+/** Token from SPA when cross-site cookies are blocked (e.g. Safari / iPad). */
+export function readGateHeader(req) {
+  const raw = req.headers['x-site-token']
+  if (typeof raw === 'string' && raw.trim()) return raw.trim()
+  const auth = req.headers.authorization
+  if (typeof auth === 'string' && auth.toLowerCase().startsWith('bearer ')) {
+    return auth.slice(7).trim()
+  }
+  return ''
+}
+
 export function readGateCookie(req) {
   const raw = req.headers.cookie
   if (!raw) return ''
