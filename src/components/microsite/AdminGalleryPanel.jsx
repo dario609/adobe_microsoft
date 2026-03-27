@@ -2,6 +2,13 @@ import { useCallback, useEffect, useState } from 'react'
 import { apiFetch } from '../../api/apiFetch.js'
 import { apiUrl } from '../../api/apiBase.js'
 
+async function parseJson(res) {
+  const ct = res.headers.get('content-type') || ''
+  if (ct.includes('application/json')) return res.json().catch(() => ({}))
+  const text = await res.text().catch(() => '')
+  return { _text: text }
+}
+
 export function AdminGalleryPanel() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -13,8 +20,15 @@ export function AdminGalleryPanel() {
     setLoading(true)
     try {
       const res = await apiFetch('/api/gallery', { cache: 'no-store' })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(data?.error || 'Could not load gallery.')
+      const data = await parseJson(res)
+      if (!res.ok) {
+        let hint = ''
+        if (res.status === 404) {
+          hint =
+            ' Not found — redeploy the backend with gallery routes, or set VITE_API_BASE_URL to your Render API URL.'
+        }
+        throw new Error((data?.error || data?._text || 'Could not load gallery.') + hint)
+      }
       setItems(Array.isArray(data?.items) ? data.items : [])
     } catch (e) {
       setError(e?.message || 'Could not load gallery.')
@@ -27,21 +41,35 @@ export function AdminGalleryPanel() {
     load()
   }, [load])
 
+  /** Upload one PNG; server returns { items: [entry] }. Show it immediately below. */
+  const uploadOne = async (file) => {
+    const fd = new FormData()
+    fd.append('images', file)
+    const res = await apiFetch('/api/gallery', { method: 'POST', body: fd })
+    const data = await parseJson(res)
+    if (!res.ok) {
+      throw new Error(data?.error || data?._text || `Upload failed (${res.status}).`)
+    }
+    const added = Array.isArray(data?.items) ? data.items : []
+    if (added.length) {
+      setItems((prev) => {
+        const ids = new Set(added.map((x) => x.id))
+        const rest = prev.filter((p) => !ids.has(p.id))
+        return [...added, ...rest]
+      })
+    }
+  }
+
   const onFiles = async (e) => {
-    const files = e.target.files
+    const files = Array.from(e.target.files || [])
     e.target.value = ''
-    if (!files?.length) return
+    if (!files.length) return
     setError('')
     setBusy(true)
     try {
-      const fd = new FormData()
       for (const f of files) {
-        fd.append('images', f)
+        await uploadOne(f)
       }
-      const res = await apiFetch('/api/gallery', { method: 'POST', body: fd })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(data?.error || 'Upload failed.')
-      await load()
     } catch (err) {
       setError(err?.message || 'Upload failed.')
     } finally {
@@ -54,15 +82,17 @@ export function AdminGalleryPanel() {
     setBusy(true)
     try {
       const res = await apiFetch(`/api/gallery/${encodeURIComponent(id)}`, { method: 'DELETE' })
-      const data = await res.json().catch(() => ({}))
+      const data = await parseJson(res)
       if (!res.ok) throw new Error(data?.error || 'Remove failed.')
-      await load()
+      setItems((prev) => prev.filter((p) => p.id !== id))
     } catch (err) {
       setError(err?.message || 'Remove failed.')
     } finally {
       setBusy(false)
     }
   }
+
+  const thumbSrc = (it) => `${apiUrl(`/api/gallery/image/${it.id}`)}?t=${encodeURIComponent(it.uploadedAt || it.id)}`
 
   return (
     <div className="adminGallery">
@@ -78,40 +108,37 @@ export function AdminGalleryPanel() {
             onChange={onFiles}
           />
         </label>
-        <span className="adminGallery__fileHint">You can select multiple files at once.</span>
+        <span className="adminGallery__fileHint">Select one or many — each file appears below as it finishes.</span>
       </div>
       {error ? (
-        <p className="appError appError--standalone" role="alert">
+        <p className="appError appError--standalone adminGallery__error" role="alert">
           {error}
         </p>
       ) : null}
-      {loading ? <p className="adminGallery__muted">Loading…</p> : null}
-      {!loading ? (
-        <ul className="adminGallery__grid" role="list">
-          {items.length === 0 ? (
-            <li className="adminGallery__empty">No PNGs uploaded yet.</li>
-          ) : (
-            items.map((it) => (
-              <li key={it.id} className="adminGallery__card">
-                <div className="adminGallery__thumbWrap">
-                  <img
-                    className="adminGallery__thumb"
-                    src={apiUrl(`/api/gallery/image/${it.id}`)}
-                    alt=""
-                    loading="lazy"
-                  />
-                </div>
-                <p className="adminGallery__name" title={it.originalName}>
-                  {it.originalName || 'image.png'}
-                </p>
-                <button type="button" className="btn btn--ghost btn--small adminGallery__remove" disabled={busy} onClick={() => remove(it.id)}>
-                  Remove
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
-      ) : null}
+      {loading ? <p className="adminGallery__loading">Loading gallery…</p> : null}
+      <ul className="adminGallery__grid" role="list">
+        {!loading && items.length === 0 ? (
+          <li className="adminGallery__empty">No PNGs uploaded yet.</li>
+        ) : null}
+        {items.map((it) => (
+          <li key={it.id} className="adminGallery__card">
+            <div className="adminGallery__thumbWrap">
+              <img className="adminGallery__thumb" src={thumbSrc(it)} alt="" loading="lazy" />
+            </div>
+            <p className="adminGallery__name" title={it.originalName}>
+              {it.originalName || 'image.png'}
+            </p>
+            <button
+              type="button"
+              className="btn btn--outlineDark btn--small adminGallery__remove"
+              disabled={busy}
+              onClick={() => remove(it.id)}
+            >
+              Remove
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

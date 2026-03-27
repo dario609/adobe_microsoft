@@ -90,6 +90,12 @@ html {
   color-scheme: light;
 }
 
+/* Admin panel: force light tokens (otherwise dark-mode OS makes gray text on white). */
+#root:has(.adminRoot--light) {
+  background: #f1f5f9;
+  color-scheme: light;
+}
+
 h1,
 h2 {
   font-family: var(--heading);

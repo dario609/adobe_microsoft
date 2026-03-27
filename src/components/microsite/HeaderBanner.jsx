@@ -14,8 +14,12 @@ export function HeaderBanner({ cacheKey = 0 }) {
 
     const id = getGalleryPickId()
     if (!id) {
-      setSrc('')
-      return () => {}
+      Promise.resolve().then(() => {
+        if (!cancelled) setSrc('')
+      })
+      return () => {
+        cancelled = true
+      }
     }
 
     ;(async () => {
