@@ -1,6 +1,15 @@
 import { useRef, useState } from 'react'
 import { apiFetch } from '../../api/apiFetch.js'
 
+async function readErrorMessage(res, fallback) {
+  const json = await res.json().catch(() => null)
+  if (json && typeof json.error === 'string' && json.error.trim()) return json.error
+  const text = await res.text().catch(() => '')
+  const body = String(text || '').trim()
+  if (body) return `${fallback} (${res.status}): ${body.slice(0, 180)}`
+  return `${fallback} (${res.status})`
+}
+
 export function BannerHeroUpload({ onUploaded, disabled, apiPrefix = '/api' }) {
   const inputRef = useRef(null)
   const [busy, setBusy] = useState(false)
@@ -14,9 +23,8 @@ export function BannerHeroUpload({ onUploaded, disabled, apiPrefix = '/api' }) {
       const fd = new FormData()
       fd.append('banner', file)
       const res = await apiFetch(`${apiPrefix}/banner`, { method: 'POST', body: fd })
-      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        throw new Error(typeof data?.error === 'string' ? data.error : 'Upload failed.')
+        throw new Error(await readErrorMessage(res, 'Upload failed'))
       }
       onUploaded?.()
     } catch (e) {
@@ -33,8 +41,7 @@ export function BannerHeroUpload({ onUploaded, disabled, apiPrefix = '/api' }) {
     try {
       const res = await apiFetch(`${apiPrefix}/banner`, { method: 'DELETE' })
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(typeof data?.error === 'string' ? data.error : 'Remove failed.')
+        throw new Error(await readErrorMessage(res, 'Remove failed'))
       }
       onUploaded?.()
     } catch (e) {

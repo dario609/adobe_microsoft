@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { apiFetch } from '../../api/apiFetch.js'
+import { API_BASE_URL } from '../../api/apiBase.js'
 import { BannerHeroUpload } from './BannerHeroUpload.jsx'
 
 function formatBytes(n) {
@@ -26,8 +27,11 @@ export function AdminPanel() {
     setLoading(true)
     try {
       const res = await apiFetch('/api/admin/uploads', { cache: 'no-store' })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(data?.error || 'Could not load uploads.')
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        const msg = typeof data?.error === 'string' ? data.error : 'Could not load uploads.'
+        throw new Error(`${msg} (HTTP ${res.status}).`)
+      }
       setItems(Array.isArray(data?.items) ? data.items : [])
     } catch (e) {
       setError(e?.message || 'Could not load uploads.')
@@ -50,6 +54,12 @@ export function AdminPanel() {
           </a>
         </div>
         <p className="adminCard__sub">Upload the banner image used in the user session header.</p>
+        {!API_BASE_URL ? (
+          <p className="appError appError--standalone">
+            Missing `VITE_API_BASE_URL` on the frontend deployment. Admin actions will fail until it points to your
+            backend API domain.
+          </p>
+        ) : null}
         <BannerHeroUpload
           apiPrefix="/api/admin"
           onUploaded={() => setRefreshKey((k) => k + 1)}
