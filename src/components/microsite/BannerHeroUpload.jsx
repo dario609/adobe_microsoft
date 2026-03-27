@@ -10,6 +10,13 @@ async function readErrorMessage(res, fallback) {
   return `${fallback} (${res.status})`
 }
 
+/** Server routes: POST/DELETE `/api/banner` or `/api/banner-admin` (not `/api/banner-admin/banner`). */
+function resolveBannerUploadPath(apiPrefix) {
+  const base = String(apiPrefix || '/api').replace(/\/$/, '')
+  if (base.endsWith('/banner-admin') || base.endsWith('/banner')) return base
+  return `${base}/banner`
+}
+
 export function BannerHeroUpload({ onUploaded, disabled, apiPrefix = '/api' }) {
   const inputRef = useRef(null)
   const [busy, setBusy] = useState(false)
@@ -22,8 +29,7 @@ export function BannerHeroUpload({ onUploaded, disabled, apiPrefix = '/api' }) {
     try {
       const fd = new FormData()
       fd.append('banner', file)
-      const uploadPath = apiPrefix.endsWith('/banner') ? apiPrefix : `${apiPrefix}/banner`
-      const res = await apiFetch(uploadPath, { method: 'POST', body: fd })
+      const res = await apiFetch(resolveBannerUploadPath(apiPrefix), { method: 'POST', body: fd })
       if (!res.ok) {
         throw new Error(await readErrorMessage(res, 'Upload failed'))
       }
@@ -40,8 +46,7 @@ export function BannerHeroUpload({ onUploaded, disabled, apiPrefix = '/api' }) {
     setError('')
     setBusy(true)
     try {
-      const removePath = apiPrefix.endsWith('/banner') ? apiPrefix : `${apiPrefix}/banner`
-      const res = await apiFetch(removePath, { method: 'DELETE' })
+      const res = await apiFetch(resolveBannerUploadPath(apiPrefix), { method: 'DELETE' })
       if (!res.ok) {
         throw new Error(await readErrorMessage(res, 'Remove failed'))
       }
