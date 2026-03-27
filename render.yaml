@@ -1,0 +1,10 @@
+# Render Web Service — Node API (Express). After connect, set env vars in the dashboard (.env).
+# https://render.com/docs/yaml-spec
+services:
+  - type: web
+    name: adobe-microsite-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health

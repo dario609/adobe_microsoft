@@ -9,6 +9,20 @@ async function parseJson(res) {
   return { _text: text }
 }
 
+/** Express/HTML error pages (e.g. "Cannot POST /api/gallery") → short actionable message. */
+function apiFailureMessage(res, data) {
+  const raw = typeof data?._text === 'string' ? data._text : ''
+  const err = typeof data?.error === 'string' ? data.error : ''
+  if (
+    raw.includes('<!DOCTYPE') ||
+    raw.includes('<pre>') ||
+    /Cannot\s+(GET|POST|DELETE)\s+\//i.test(raw)
+  ) {
+    return 'The API does not expose this route (often an outdated deploy). On Render: Start Command must be npm start, redeploy the latest code, and on Vercel set VITE_API_BASE_URL to your Render service URL (e.g. https://your-service.onrender.com).'
+  }
+  return err || raw || `Request failed (${res.status}).`
+}
+
 export function AdminGalleryPanel() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -22,12 +36,7 @@ export function AdminGalleryPanel() {
       const res = await apiFetch('/api/gallery', { cache: 'no-store' })
       const data = await parseJson(res)
       if (!res.ok) {
-        let hint = ''
-        if (res.status === 404) {
-          hint =
-            ' Not found — redeploy the backend with gallery routes, or set VITE_API_BASE_URL to your Render API URL.'
-        }
-        throw new Error((data?.error || data?._text || 'Could not load gallery.') + hint)
+        throw new Error(apiFailureMessage(res, data) || 'Could not load gallery.')
       }
       setItems(Array.isArray(data?.items) ? data.items : [])
     } catch (e) {
@@ -48,7 +57,7 @@ export function AdminGalleryPanel() {
     const res = await apiFetch('/api/gallery', { method: 'POST', body: fd })
     const data = await parseJson(res)
     if (!res.ok) {
-      throw new Error(data?.error || data?._text || `Upload failed (${res.status}).`)
+      throw new Error(apiFailureMessage(res, data) || `Upload failed (${res.status}).`)
     }
     const added = Array.isArray(data?.items) ? data.items : []
     if (added.length) {
@@ -83,7 +92,7 @@ export function AdminGalleryPanel() {
     try {
       const res = await apiFetch(`/api/gallery/${encodeURIComponent(id)}`, { method: 'DELETE' })
       const data = await parseJson(res)
-      if (!res.ok) throw new Error(data?.error || 'Remove failed.')
+      if (!res.ok) throw new Error(apiFailureMessage(res, data) || 'Remove failed.')
       setItems((prev) => prev.filter((p) => p.id !== id))
     } catch (err) {
       setError(err?.message || 'Remove failed.')
