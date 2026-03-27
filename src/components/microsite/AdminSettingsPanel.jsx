@@ -10,14 +10,18 @@ async function parseResponse(res) {
 
 function toFriendlyError(res, data, fallback) {
   const raw = String(data?.error || '')
-  if (
-    raw.includes('<!DOCTYPE') ||
-    raw.includes('<pre>') ||
-    /Cannot\s+(GET|POST|PUT|PATCH|DELETE)\s+\//i.test(raw)
-  ) {
+  if (isMissingSettingsRoute(raw)) {
     return 'Settings API route is missing on the deployed backend. Redeploy the latest server build (with /api/config/session and /api/config/site-password routes).'
   }
   return raw || fallback
+}
+
+function isMissingSettingsRoute(raw) {
+  return (
+    raw.includes('<!DOCTYPE') ||
+    raw.includes('<pre>') ||
+    /Cannot\s+(GET|POST|PUT|PATCH|DELETE)\s+\//i.test(raw)
+  )
 }
 
 export function AdminSettingsPanel() {
@@ -28,6 +32,7 @@ export function AdminSettingsPanel() {
   const [password, setPassword] = useState('')
   const [msg, setMsg] = useState('')
   const [err, setErr] = useState('')
+  const [unsupported, setUnsupported] = useState(false)
 
   useEffect(() => {
     ;(async () => {
@@ -37,7 +42,13 @@ export function AdminSettingsPanel() {
         const data = await parseResponse(res)
         if (!res.ok) throw new Error(toFriendlyError(res, data, 'Could not load settings.'))
         setSessionSeconds(Number(data?.sessionSeconds) || 0)
-        setPasswordEnabled(Boolean(data?.sitePasswordEnabled))
+        if (typeof data?.sitePasswordEnabled === 'boolean') {
+          setPasswordEnabled(Boolean(data.sitePasswordEnabled))
+          setUnsupported(false)
+        } else {
+          setUnsupported(true)
+          setMsg('This deployment supports gallery only. Redeploy latest backend to enable timer/password settings.')
+        }
       } catch (e) {
         setErr(e?.message || 'Could not load settings.')
       } finally {
@@ -58,7 +69,15 @@ export function AdminSettingsPanel() {
         body: JSON.stringify({ sessionSeconds: Number(sessionSeconds) || 0 }),
       })
       const data = await parseResponse(res)
-      if (!res.ok) throw new Error(toFriendlyError(res, data, 'Could not save timer.'))
+      if (!res.ok) {
+        const message = toFriendlyError(res, data, 'Could not save timer.')
+        if (isMissingSettingsRoute(String(data?.error || ''))) {
+          setUnsupported(true)
+          setMsg('Settings are unavailable on this backend deploy. Please redeploy server.')
+          return
+        }
+        throw new Error(message)
+      }
       setSessionSeconds(Number(data?.sessionSeconds) || 0)
       setMsg('Timer updated.')
     } catch (e) {
@@ -82,7 +101,15 @@ export function AdminSettingsPanel() {
         body: JSON.stringify(payload),
       })
       const data = await parseResponse(res)
-      if (!res.ok) throw new Error(toFriendlyError(res, data, 'Could not save password settings.'))
+      if (!res.ok) {
+        const message = toFriendlyError(res, data, 'Could not save password settings.')
+        if (isMissingSettingsRoute(String(data?.error || ''))) {
+          setUnsupported(true)
+          setMsg('Settings are unavailable on this backend deploy. Please redeploy server.')
+          return
+        }
+        throw new Error(message)
+      }
       setPasswordEnabled(Boolean(data?.sitePasswordEnabled))
       setPassword('')
       setMsg('Password settings updated.')
@@ -114,9 +141,9 @@ export function AdminSettingsPanel() {
             step="1"
             value={sessionSeconds}
             onChange={(e) => setSessionSeconds(e.target.value)}
-            disabled={saving || loading}
+            disabled={saving || loading || unsupported}
           />
-          <button type="submit" className="btn btn--dark btn--small" disabled={saving || loading}>
+          <button type="submit" className="btn btn--dark btn--small" disabled={saving || loading || unsupported}>
             Save timer
           </button>
         </form>
@@ -127,7 +154,7 @@ export function AdminSettingsPanel() {
               type="checkbox"
               checked={passwordEnabled}
               onChange={(e) => setPasswordEnabled(e.target.checked)}
-              disabled={saving || loading}
+              disabled={saving || loading || unsupported}
             />
             Enable password gate
           </label>
@@ -141,9 +168,9 @@ export function AdminSettingsPanel() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter new password"
-            disabled={saving || loading}
+            disabled={saving || loading || unsupported}
           />
-          <button type="submit" className="btn btn--dark btn--small" disabled={saving || loading}>
+          <button type="submit" className="btn btn--dark btn--small" disabled={saving || loading || unsupported}>
             Save password settings
           </button>
         </form>
