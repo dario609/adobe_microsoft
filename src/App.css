@@ -125,6 +125,11 @@
   justify-content: center;
   align-items: stretch;
   background: #ffffff;
+  /* Override :root dark-mode --text on white (template names, body copy stay readable). */
+  color: #334155;
+  --text: #334155;
+  --text-h: #0f172a;
+  color-scheme: light;
 }
 
 .appRoot--editing {
@@ -450,6 +455,8 @@
   cursor: pointer;
   text-align: center;
   -webkit-tap-highlight-color: transparent;
+  color: #0f172a;
+  font: inherit;
 }
 
 .landGallery__img {
@@ -473,10 +480,12 @@
 }
 
 .landGallery__caption {
-  font-size: 0.8125rem;
+  display: block;
+  font-size: 0.875rem;
   line-height: 1.35;
-  font-weight: 500;
+  font-weight: 600;
   color: #0f172a;
+  -webkit-text-fill-color: #0f172a;
   word-break: break-word;
   max-width: 140px;
 }
@@ -569,36 +578,30 @@
 }
 
 .adminMainRow {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 380px);
   gap: 18px;
+  align-items: start;
   width: 100%;
   min-width: 0;
 }
 
 .adminMainRow__gallery {
-  flex: 1 1 0;
   min-width: 0;
 }
 
 .adminMainRow__settings {
-  flex: 0 0 min(360px, 38%);
-  min-width: 260px;
+  min-width: 0;
   position: sticky;
   top: 16px;
-  align-self: flex-start;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1024px) {
   .adminMainRow {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
   .adminMainRow__settings {
-    flex: 1 1 auto;
-    width: 100%;
-    min-width: 0;
     position: static;
   }
 }

@@ -96,6 +96,12 @@ html {
   color-scheme: light;
 }
 
+/* Landing / template select: white shell must not inherit dark-mode gray body text. */
+#root:has(.appRoot--landing) {
+  color-scheme: light;
+  color: #334155;
+}
+
 h1,
 h2 {
   font-family: var(--heading);
