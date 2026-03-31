@@ -14,10 +14,6 @@ export function AdminPanel() {
             User Page
           </a>
         </div>
-        <p className="adminCard__sub adminCard__sub--dark">
-          Upload PNGs for the landing gallery. Optionally attach an Adobe Express template ID so guests open that
-          design when they select the image and tap Start.
-        </p>
         <AdminGalleryPanel />
       </section>
       <AdminSettingsPanel />

@@ -212,6 +212,7 @@ export function AdminGalleryPanel() {
   }
 
   const remove = async (id) => {
+    if (!window.confirm('Remove this image from the gallery?')) return
     setActionError('')
     setBusy(true)
     try {
@@ -252,29 +253,27 @@ export function AdminGalleryPanel() {
             <label className="adminGallery__fieldLabel" htmlFor="upload-template-id">
               Template ID (optional)
             </label>
-            <input
-              id="upload-template-id"
-              className="adminGallery__textInput adminGallery__textInput--template"
-              type="text"
-              placeholder="Applied to uploads below"
-              value={uploadTemplateId}
-              onChange={(e) => setUploadTemplateId(e.target.value)}
-              disabled={busy}
-            />
+            <div className="adminGallery__fieldRow">
+              <input
+                id="upload-template-id"
+                className="adminGallery__textInput adminGallery__textInput--template"
+                type="text"
+                placeholder="Applied to uploads below"
+                value={uploadTemplateId}
+                onChange={(e) => setUploadTemplateId(e.target.value)}
+                disabled={busy}
+              />
+              <a
+                className="adminGallery__templatesLink"
+                href={ADOBE_EXPLORE_TEMPLATES_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Browse Adobe templates
+              </a>
+            </div>
           </div>
-          <a
-            className="adminGallery__templatesLink"
-            href={ADOBE_EXPLORE_TEMPLATES_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Browse Adobe templates
-          </a>
         </div>
-        <p className="adminGallery__toolbarHint">
-          Paste the full Adobe template URN (e.g. <code className="adminGallery__code">urn:aaid:sc:…</code>) — long
-          IDs are supported. Guests get this template when they select the image and tap Start.
-        </p>
       </div>
       {loadError ? (
         <p className="appError appError--standalone adminGallery__error" role="alert">
@@ -324,13 +323,13 @@ export function AdminGalleryPanel() {
               <div className="adminGallery__cardActions">
                 <button
                   type="button"
-                  className="btn btn--adminGradient btn--small"
+                  className="btn btn--adminGradient btn--small adminGallery__actionBtn"
                   disabled={busy}
                   onClick={() => saveMeta(it.id)}
                 >
                   Save changes
                 </button>
-                <label className="btn btn--adminSoft btn--small adminGallery__fileLabel">
+                <label className="btn btn--adminSoft btn--small adminGallery__fileLabel adminGallery__actionBtn">
                   Replace PNG
                   <input
                     className="adminGallery__fileInput"
@@ -344,17 +343,9 @@ export function AdminGalleryPanel() {
                     }}
                   />
                 </label>
-                <a
-                  className="btn btn--adminSoft btn--small adminGallery__linkBtn"
-                  href={ADOBE_EXPLORE_TEMPLATES_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Find templates
-                </a>
                 <button
                   type="button"
-                  className="btn btn--adminDanger btn--small"
+                  className="btn btn--adminDanger btn--small adminGallery__actionBtn"
                   disabled={busy}
                   onClick={() => remove(it.id)}
                 >

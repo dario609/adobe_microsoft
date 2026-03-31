@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { apiUrl } from '../../api/apiBase.js'
 import { getGalleryPickId, getGalleryTemplateId, setGalleryPickId } from '../../constants/gallerySelection.js'
 
@@ -7,9 +7,6 @@ export function LandingGallery({ onSelectionChange }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selectedId, setSelectedId] = useState(() => getGalleryPickId())
-  const railRef = useRef(null)
-  const [canScrollLeft, setCanScrollLeft] = useState(false)
-  const [canScrollRight, setCanScrollRight] = useState(false)
 
   const load = useCallback(async () => {
     setError('')
@@ -42,47 +39,13 @@ export function LandingGallery({ onSelectionChange }) {
     onSelectionChange?.()
   }, [items, selectedId, onSelectionChange])
 
-  const updateScrollButtons = useCallback(() => {
-    const el = railRef.current
-    if (!el) {
-      setCanScrollLeft(false)
-      setCanScrollRight(false)
-      return
-    }
-    const maxLeft = Math.max(0, el.scrollWidth - el.clientWidth)
-    const left = el.scrollLeft
-    setCanScrollLeft(left > 6)
-    setCanScrollRight(left < maxLeft - 6)
-  }, [])
-
-  useEffect(() => {
-    updateScrollButtons()
-  }, [items, loading, updateScrollButtons])
-
-  useEffect(() => {
-    const el = railRef.current
-    if (!el) return () => {}
-    const onScroll = () => updateScrollButtons()
-    el.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', onScroll)
-    return () => {
-      el.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', onScroll)
-    }
-  }, [updateScrollButtons])
-
   const pick = (it) => {
     setSelectedId(it.id)
     setGalleryPickId(it.id, it.templateId || '')
     onSelectionChange?.()
   }
 
-  const scrollRail = (dir) => {
-    const el = railRef.current
-    if (!el) return
-    const amount = Math.max(220, Math.floor(el.clientWidth * 0.8))
-    el.scrollBy({ left: dir * amount, behavior: 'smooth' })
-  }
+  const displayName = (it) => (it.originalName || 'image.png').trim() || 'image.png'
 
   return (
     <div className="landGallery">
@@ -92,48 +55,25 @@ export function LandingGallery({ onSelectionChange }) {
         <p className="landGallery__muted">No images yet. Ask an operator to upload PNGs in the admin panel.</p>
       ) : null}
       {!loading && items.length > 0 ? (
-        <div className="landGallery__carousel">
-          <button
-            type="button"
-            className="landGallery__navBtn"
-            aria-label="Show previous images"
-            onClick={() => scrollRail(-1)}
-            disabled={!canScrollLeft}
-          >
-            <span className="landGallery__navIcon" aria-hidden="true">
-              &#10094;
-            </span>
-          </button>
-          <ul className="landGallery__rail" role="list" ref={railRef}>
-            {items.map((it) => {
-              const src = apiUrl(`/api/gallery/image/${it.id}?v=${encodeURIComponent(it.uploadedAt || '')}`)
-              const active = selectedId === it.id
-              return (
-                <li key={it.id} className="landGallery__item">
-                  <button
-                    type="button"
-                    className={`landGallery__thumbBtn${active ? ' landGallery__thumbBtn--active' : ''}`}
-                    onClick={() => pick(it)}
-                    aria-pressed={active}
-                  >
-                    <img className="landGallery__thumb" src={src} alt="" loading="lazy" />
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-          <button
-            type="button"
-            className="landGallery__navBtn"
-            aria-label="Show next images"
-            onClick={() => scrollRail(1)}
-            disabled={!canScrollRight}
-          >
-            <span className="landGallery__navIcon" aria-hidden="true">
-              &#10095;
-            </span>
-          </button>
-        </div>
+        <ul className="landGallery__list" role="list">
+          {items.map((it) => {
+            const src = apiUrl(`/api/gallery/image/${it.id}?v=${encodeURIComponent(it.uploadedAt || '')}`)
+            const active = selectedId === it.id
+            return (
+              <li key={it.id} className="landGallery__tile">
+                <button
+                  type="button"
+                  className={`landGallery__pick${active ? ' landGallery__pick--active' : ''}`}
+                  onClick={() => pick(it)}
+                  aria-pressed={active}
+                >
+                  <img className="landGallery__img" src={src} alt="" loading="lazy" />
+                  <span className="landGallery__caption">{displayName(it)}</span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
       ) : null}
     </div>
   )

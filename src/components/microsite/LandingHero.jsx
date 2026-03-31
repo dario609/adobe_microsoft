@@ -23,7 +23,10 @@ export function LandingHero({
           {startLabel}
         </button>
       </div>
-      <p className="landHero__status" aria-live="polite">
+      <p
+        className={`landHero__status${status === 'ready' ? ' landHero__status--center' : ''}`}
+        aria-live="polite"
+      >
         {status === 'loading' && <span>Connecting to Adobe Express…</span>}
         {status === 'ready' && <span>Choose a template and press Start.</span>}
         {status === 'error' && (
