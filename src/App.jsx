@@ -55,7 +55,7 @@ function MicrositeRoutes() {
             <MicrositeHeader />
             <LandingHero
               status={m.status}
-              onStart={m.startEditor}
+              onStart={m.openStartPickupModal}
               canStart={m.canStart}
               onGallerySelectionChange={() => setGalleryCacheKey((k) => k + 1)}
             />
@@ -93,6 +93,7 @@ function MicrositeRoutes() {
 
         {m.showNameModal ? (
           <FileNameModal
+            variant={m.nameModalMode}
             value={m.nameInput}
             onChange={m.setNameInput}
             onConfirm={m.confirmFileName}

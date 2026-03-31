@@ -9,13 +9,15 @@ import { FINISH_AFTER_NAME_BANNER } from '../constants/flow.js'
 import { blobFromAdobeExport, getPublishAssetPayload } from '../utils/adobeAsset.js'
 import { friendlyExportFailure } from '../utils/uploadErrors.js'
 import { clearGalleryPick, getGalleryTemplateId } from '../constants/gallerySelection.js'
+import { buildPickupExportFilename } from '../utils/uploadFilename.js'
 
 export function useMicrositeWorkflow() {
   const { sessionSeconds, showSessionTimer } = useRuntimeConfig()
   const editorRef = useRef(null)
   const sdkRef = useRef(null)
   const launchedRef = useRef(false)
-  const pendingFilenameRef = useRef(null)
+  /** Trimmed pickup name from Start (or Finish); export filename adds timestamp. */
+  const pickupBaseNameRef = useRef('')
 
   const [status, setStatus] = useState('loading')
   const [error, setError] = useState('')
@@ -23,6 +25,8 @@ export function useMicrositeWorkflow() {
   const [remaining, setRemaining] = useState(sessionSeconds)
   const [timerRunning, setTimerRunning] = useState(false)
   const [showNameModal, setShowNameModal] = useState(false)
+  /** 'start' = before Express; 'finish' = header Finish flow */
+  const [nameModalMode, setNameModalMode] = useState('finish')
   const [nameInput, setNameInput] = useState('')
   const [uploadBusy, setUploadBusy] = useState(false)
   const [banner, setBanner] = useState('')
@@ -38,7 +42,7 @@ export function useMicrositeWorkflow() {
     setError('')
     setBanner('')
     setTimerRunning(false)
-    pendingFilenameRef.current = null
+    pickupBaseNameRef.current = ''
     setNameInput('')
     setShowNameModal(false)
     setRemaining(sessionSeconds)
@@ -129,7 +133,7 @@ export function useMicrositeWorkflow() {
     return () => clearInterval(id)
   }, [timerRunning, phase, handleTimeUp, showSessionTimer, sessionSeconds])
 
-  const startEditor = useCallback(() => {
+  const launchEditor = useCallback(() => {
     const editor = editorRef.current
     if (!editor || launchedRef.current || status !== 'ready') return
 
@@ -142,7 +146,6 @@ export function useMicrositeWorkflow() {
     launchedRef.current = true
     setError('')
     setBanner('')
-    pendingFilenameRef.current = null
     setRemaining(sessionSeconds)
     setPhase('editing')
     setTimerRunning(showSessionTimer && sessionSeconds > 0)
@@ -154,9 +157,9 @@ export function useMicrositeWorkflow() {
             await resetForNextUser()
           },
           onPublish: async (_intent, publishParams) => {
-            const expectedName = pendingFilenameRef.current
-            if (!expectedName?.trim()) {
-              setError('Enter your name (Finish), then use Export & upload in Adobe.')
+            const base = pickupBaseNameRef.current
+            if (!base?.trim()) {
+              setError('Pickup name is missing. Use Finish to enter your name, then Export & upload.')
               return
             }
 
@@ -166,11 +169,13 @@ export function useMicrositeWorkflow() {
               return
             }
 
+            const filename = buildPickupExportFilename(base)
+
             setUploadBusy(true)
             setError('')
             try {
               const blob = await blobFromAdobeExport(payload)
-              await uploadDesignToServer(blob, expectedName)
+              await uploadDesignToServer(blob, filename)
               setBanner('Uploaded to Dropbox. Resetting for the next guest…')
               await resetForNextUser()
             } catch (e) {
@@ -212,21 +217,44 @@ export function useMicrositeWorkflow() {
     runCreate()
   }, [status, resetForNextUser, sessionSeconds, showSessionTimer])
 
+  const openStartPickupModal = useCallback(() => {
+    if (status !== 'ready' || launchedRef.current) return
+    const galleryTemplate = getGalleryTemplateId().trim()
+    if (REQUIRE_ADOBE_TEMPLATE && !ADOBE_TEMPLATE_ID && !galleryTemplate) {
+      setError('Choose a gallery image that has a template ID, or set VITE_ADOBE_TEMPLATE_ID in .env.')
+      return
+    }
+    setNameModalMode('start')
+    setNameInput(pickupBaseNameRef.current || '')
+    setShowNameModal(true)
+  }, [status])
+
   const openFinishModal = useCallback(() => {
-    setNameInput('')
+    setNameModalMode('finish')
+    setNameInput(pickupBaseNameRef.current || '')
     setShowNameModal(true)
   }, [])
 
   const confirmFileName = useCallback(async () => {
     const n = nameInput.trim()
     if (!n) {
-      setError('Please enter your name.')
+      setError(
+        nameModalMode === 'start'
+          ? 'Please enter the name you will use when you pickup the item.'
+          : 'Please enter your name.'
+      )
       return
     }
-    pendingFilenameRef.current = n
+    pickupBaseNameRef.current = n
+    const mode = nameModalMode
     setShowNameModal(false)
     setError('')
     setBanner('')
+
+    if (mode === 'start') {
+      launchEditor()
+      return
+    }
 
     try {
       await tryAutomatePublishExport(editorRef.current)
@@ -235,7 +263,7 @@ export function useMicrositeWorkflow() {
     }
 
     setBanner(FINISH_AFTER_NAME_BANNER)
-  }, [nameInput])
+  }, [nameInput, nameModalMode, launchEditor])
 
   const cancelNameModal = useCallback(() => {
     setShowNameModal(false)
@@ -256,7 +284,8 @@ export function useMicrositeWorkflow() {
     nameInput,
     setNameInput,
     uploadBusy,
-    startEditor,
+    openStartPickupModal,
+    nameModalMode,
     showLeaveConfirm,
     openLeaveConfirm,
     cancelLeaveConfirm,

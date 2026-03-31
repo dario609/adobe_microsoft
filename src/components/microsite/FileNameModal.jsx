@@ -1,15 +1,23 @@
-export function FileNameModal({ value, onChange, onConfirm, onCancel }) {
+export function FileNameModal({ variant = 'finish', value, onChange, onConfirm, onCancel }) {
+  const isStart = variant === 'start'
+  const title = isStart ? 'Pickup name' : 'Your name'
+  const hintLead = isStart
+    ? 'Please enter the name you will use when you pickup the item.'
+    : 'This should match the name you are using for pickup.'
+  const hintMuted = isStart
+    ? 'Your file will be saved as this name plus the date and time (so each export is unique). Then use Export & upload in Adobe Express.'
+    : 'Then use Export & upload in Adobe Express.'
+  const placeholder = isStart ? 'Pickup name' : 'Your name'
+
   return (
     <div className="modalRoot" role="dialog" aria-modal="true" aria-labelledby="fn-title">
       <button type="button" className="modalRoot__scrim" aria-label="Close" onClick={onCancel} />
       <div className="modalCard">
         <h2 id="fn-title" className="modalCard__title">
-          Your Name
+          {title}
         </h2>
-        <p className="modalCard__hint modalCard__hint--lead">
-          This should match the name you&apos;re using for pickup.
-        </p>
-        <p className="modalCard__hint modalCard__hint--muted">Then use Export & upload in Adobe Express.</p>
+        <p className="modalCard__hint modalCard__hint--lead">{hintLead}</p>
+        <p className="modalCard__hint modalCard__hint--muted">{hintMuted}</p>
         <input
           id="file-name-input"
           className="modalCard__input"
@@ -17,7 +25,7 @@ export function FileNameModal({ value, onChange, onConfirm, onCancel }) {
           inputMode="text"
           autoComplete="name"
           autoFocus
-          placeholder="Your name"
+          placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => {
@@ -29,7 +37,7 @@ export function FileNameModal({ value, onChange, onConfirm, onCancel }) {
             Cancel
           </button>
           <button type="button" className="btn btn--primary" onClick={onConfirm}>
-            Continue
+            {isStart ? 'Start Express' : 'Continue'}
           </button>
         </div>
       </div>

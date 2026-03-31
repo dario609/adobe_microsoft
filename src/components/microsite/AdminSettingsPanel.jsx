@@ -299,10 +299,6 @@ export function AdminSettingsPanel() {
             <span className="adminSettings__badge adminSettings__badge--admin">Admin</span>
             <p className="adminSettings__cardTitle">Operator password</p>
           </div>
-          <p className="adminSettings__hint">
-            Protects <code className="adminSettings__code">/admin</code> (gallery &amp; these settings). Separate from the
-            visitor site password above.
-          </p>
           <label className="adminSettings__check">
             <input
               type="checkbox"
