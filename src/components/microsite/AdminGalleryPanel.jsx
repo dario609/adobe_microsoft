@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { ADOBE_EXPLORE_TEMPLATES_URL } from '../../constants/config.js'
 import { apiFetch } from '../../api/apiFetch.js'
 import { apiUrl } from '../../api/apiBase.js'
+import { validateGalleryDraftLocal } from '../../utils/galleryDisplay.js'
 
 async function parseJson(res) {
   const ct = res.headers.get('content-type') || ''
@@ -51,6 +52,8 @@ export function AdminGalleryPanel() {
   const [actionError, setActionError] = useState('')
   const [uploadTemplateId, setUploadTemplateId] = useState('')
   const [draftById, setDraftById] = useState({})
+  /** @type {Record<string, { originalName?: string; templateId?: string }>} */
+  const [fieldErrorsById, setFieldErrorsById] = useState({})
 
   const looksLikeGitHubToken = (s) => /^ghp_[a-zA-Z0-9]{20,}/i.test(String(s || '').trim())
 
@@ -93,6 +96,25 @@ export function AdminGalleryPanel() {
     }))
   }
 
+  const clearFieldError = (id, field) => {
+    setFieldErrorsById((prev) => {
+      const cur = prev[id]
+      if (!cur?.[field]) return prev
+      const next = { ...cur }
+      delete next[field]
+      if (Object.keys(next).length === 0) {
+        const { [id]: _, ...rest } = prev
+        return rest
+      }
+      return { ...prev, [id]: next }
+    })
+  }
+
+  const parseUploadError = (res, data) => {
+    if (res.status === 409 && typeof data?.error === 'string') return data.error
+    return apiFailureMessage(res, data, 'upload') || `Upload failed (${res.status}).`
+  }
+
   /** Upload one PNG; optional template ID applies to this upload. */
   const uploadOne = async (file) => {
     const fd = new FormData()
@@ -102,7 +124,7 @@ export function AdminGalleryPanel() {
     const res = await apiFetch('/api/gallery', { method: 'POST', body: fd })
     const data = await parseJson(res)
     if (!res.ok) {
-      throw new Error(apiFailureMessage(res, data, 'upload') || `Upload failed (${res.status}).`)
+      throw new Error(parseUploadError(res, data))
     }
     const added = Array.isArray(data?.items) ? data.items : []
     if (added.length) {
@@ -145,11 +167,29 @@ export function AdminGalleryPanel() {
     const d = draftById[id]
     if (!d) return
     if (looksLikeGitHubToken(d.templateId)) {
+      setFieldErrorsById((prev) => ({
+        ...prev,
+        [id]: {
+          ...prev[id],
+          templateId:
+            'Template ID looks like a GitHub token (starts with ghp_). Use an Adobe Express template URN (urn:aaid:…), not a GitHub secret.',
+        },
+      }))
       setActionError(
         'Template ID looks like a GitHub token (starts with ghp_). Use an Adobe Express template URN (urn:aaid:…), not a GitHub secret. Remove this value and revoke that token on GitHub if it was exposed.'
       )
       return
     }
+    const localErr = validateGalleryDraftLocal(id, items, d)
+    if (localErr) {
+      setFieldErrorsById((prev) => ({ ...prev, [id]: { ...prev[id], ...localErr } }))
+      setActionError('Fix the highlighted fields before saving.')
+      return
+    }
+    setFieldErrorsById((prev) => {
+      const { [id]: _, ...rest } = prev
+      return rest
+    })
     setActionError('')
     setBusy(true)
     try {
@@ -170,6 +210,15 @@ export function AdminGalleryPanel() {
           body,
         })
         data = await parseJson(res)
+      }
+      if (res.status === 409) {
+        const field = data?.field
+        const msg = typeof data?.error === 'string' ? data.error : 'This value is already in use.'
+        if (field === 'originalName' || field === 'templateId') {
+          setFieldErrorsById((prev) => ({ ...prev, [id]: { ...prev[id], [field]: msg } }))
+        }
+        setActionError(msg)
+        return
       }
       if (!res.ok) throw new Error(apiFailureMessage(res, data, 'saveMeta') || 'Update failed.')
       const it = data?.item
@@ -224,6 +273,10 @@ export function AdminGalleryPanel() {
         const next = { ...prev }
         delete next[id]
         return next
+      })
+      setFieldErrorsById((prev) => {
+        const { [id]: _, ...rest } = prev
+        return rest
       })
     } catch (err) {
       setActionError(err?.message || 'Remove failed.')
@@ -292,6 +345,7 @@ export function AdminGalleryPanel() {
         ) : null}
         {items.map((it) => {
           const d = draftById[it.id] || { templateId: '', originalName: it.originalName || '' }
+          const fe = fieldErrorsById[it.id] || {}
           return (
             <li key={it.id} className="adminGallery__card">
               <div className="adminGallery__thumbWrap">
@@ -302,47 +356,69 @@ export function AdminGalleryPanel() {
               </label>
               <input
                 id={`name-${it.id}`}
-                className="adminGallery__textInput"
+                className={`adminGallery__textInput${fe.originalName ? ' adminGallery__textInput--invalid' : ''}`}
                 type="text"
                 value={d.originalName}
-                onChange={(e) => setDraft(it.id, { originalName: e.target.value })}
+                onChange={(e) => {
+                  setDraft(it.id, { originalName: e.target.value })
+                  clearFieldError(it.id, 'originalName')
+                }}
                 disabled={busy}
+                aria-invalid={Boolean(fe.originalName)}
+                aria-describedby={fe.originalName ? `name-err-${it.id}` : undefined}
               />
+              {fe.originalName ? (
+                <p id={`name-err-${it.id}`} className="adminGallery__fieldError" role="alert">
+                  {fe.originalName}
+                </p>
+              ) : null}
               <label className="adminGallery__miniLabel" htmlFor={`tpl-${it.id}`}>
                 Template ID
               </label>
               <input
                 id={`tpl-${it.id}`}
-                className="adminGallery__textInput adminGallery__textInput--template"
+                className={`adminGallery__textInput adminGallery__textInput--template${
+                  fe.templateId ? ' adminGallery__textInput--invalid' : ''
+                }`}
                 type="text"
                 placeholder="Optional"
                 value={d.templateId}
-                onChange={(e) => setDraft(it.id, { templateId: e.target.value })}
+                onChange={(e) => {
+                  setDraft(it.id, { templateId: e.target.value })
+                  clearFieldError(it.id, 'templateId')
+                }}
                 disabled={busy}
+                aria-invalid={Boolean(fe.templateId)}
+                aria-describedby={fe.templateId ? `tpl-err-${it.id}` : undefined}
               />
-              <div className="adminGallery__cardActions">
+              {fe.templateId ? (
+                <p id={`tpl-err-${it.id}`} className="adminGallery__fieldError" role="alert">
+                  {fe.templateId}
+                </p>
+              ) : null}
+              <label className="btn btn--adminSoft btn--small adminGallery__fileLabel adminGallery__replacePng">
+                Replace PNG
+                <input
+                  className="adminGallery__fileInput"
+                  type="file"
+                  accept="image/png"
+                  disabled={busy}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    e.target.value = ''
+                    if (f) replacePng(it.id, f)
+                  }}
+                />
+              </label>
+              <div className="adminGallery__cardActions adminGallery__cardActions--two">
                 <button
                   type="button"
                   className="btn btn--adminGradient btn--small adminGallery__actionBtn"
                   disabled={busy}
                   onClick={() => saveMeta(it.id)}
                 >
-                  Save changes
+                  Save
                 </button>
-                <label className="btn btn--adminSoft btn--small adminGallery__fileLabel adminGallery__actionBtn">
-                  Replace PNG
-                  <input
-                    className="adminGallery__fileInput"
-                    type="file"
-                    accept="image/png"
-                    disabled={busy}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0]
-                      e.target.value = ''
-                      if (f) replacePng(it.id, f)
-                    }}
-                  />
-                </label>
                 <button
                   type="button"
                   className="btn btn--adminDanger btn--small adminGallery__actionBtn"

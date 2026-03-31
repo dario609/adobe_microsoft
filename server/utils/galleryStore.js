@@ -39,6 +39,33 @@ export function normalizeTemplateId(v) {
   return s.slice(0, 4096)
 }
 
+/** Canonical display name for uniqueness (matches persist rules). */
+export function displayKey(name) {
+  const s = String(name ?? '').trim().slice(0, 240)
+  return s || 'image.png'
+}
+
+/**
+ * @param {Array<{ id: string, originalName?: string, templateId?: string }>} items
+ * @param {string | null} excludeId — skip this id (current item when updating)
+ * @param {string} display
+ * @param {string} templateId — normalized
+ * @returns {{ field: 'originalName' | 'templateId', message: string } | null}
+ */
+export function findGalleryConflict(items, excludeId, display, templateId) {
+  const tid = normalizeTemplateId(templateId)
+  for (const x of items) {
+    if (excludeId != null && x.id === excludeId) continue
+    if (displayKey(x.originalName) === display) {
+      return { field: 'originalName', message: 'Display name must be unique across gallery items.' }
+    }
+    if (tid && normalizeTemplateId(x.templateId) === tid) {
+      return { field: 'templateId', message: 'This template ID is already used by another item.' }
+    }
+  }
+  return null
+}
+
 export async function listGalleryItems() {
   return readManifest()
 }
@@ -49,15 +76,24 @@ export async function addGalleryPng(buffer, meta) {
   const id = crypto.randomUUID()
   const p = getGalleryFilePath(id)
   if (!p) throw new Error('Invalid id')
+  const originalName = displayKey(meta.originalName ?? 'image.png')
+  const templateId = normalizeTemplateId(meta.templateId)
+  const items = await readManifest()
+  const conflict = findGalleryConflict(items, null, originalName, templateId)
+  if (conflict) {
+    const err = new Error(conflict.message)
+    err.code = 'GALLERY_CONFLICT'
+    err.field = conflict.field
+    throw err
+  }
   await fs.writeFile(p, buffer)
   const entry = {
     id,
-    originalName: meta.originalName || 'image.png',
+    originalName,
     bytes: meta.bytes,
     uploadedAt: new Date().toISOString(),
-    templateId: normalizeTemplateId(meta.templateId),
+    templateId,
   }
-  const items = await readManifest()
   items.unshift(entry)
   await writeManifest(items.slice(0, 500))
   return entry
@@ -89,7 +125,14 @@ export async function updateGalleryItem(id, patch) {
   const cur = items[idx]
   const next = { ...cur }
   if (patch.templateId !== undefined) next.templateId = normalizeTemplateId(patch.templateId)
-  if (patch.originalName !== undefined) next.originalName = String(patch.originalName || 'image.png').slice(0, 240)
+  if (patch.originalName !== undefined) next.originalName = displayKey(patch.originalName)
+  const conflict = findGalleryConflict(items, id, displayKey(next.originalName), next.templateId)
+  if (conflict) {
+    const err = new Error(conflict.message)
+    err.code = 'GALLERY_CONFLICT'
+    err.field = conflict.field
+    throw err
+  }
   items[idx] = next
   await writeManifest(items)
   return next

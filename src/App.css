@@ -924,6 +924,25 @@
   word-break: break-all;
 }
 
+.adminGallery__textInput--invalid {
+  border-color: #ef4444;
+  background: #fff7f7;
+}
+
+.adminGallery__fieldError {
+  margin: -2px 0 4px;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #b91c1c;
+}
+
+.adminGallery__replacePng {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4px;
+  justify-content: center;
+}
+
 .adminGallery__code {
   font-family: ui-monospace, system-ui, monospace;
   font-size: 0.78em;
@@ -964,6 +983,10 @@
   gap: 8px;
   margin-top: 8px;
   width: 100%;
+}
+
+.adminGallery__cardActions--two {
+  margin-top: 10px;
 }
 
 .adminGallery__actionBtn {

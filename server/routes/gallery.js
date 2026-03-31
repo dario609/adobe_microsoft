@@ -70,6 +70,9 @@ export function createGalleryRouter() {
         }
         return res.json({ ok: true, items: added.map(mapItem) })
       } catch (e) {
+        if (e?.code === 'GALLERY_CONFLICT') {
+          return res.status(409).json({ error: e.message, field: e.field })
+        }
         console.error('gallery upload:', e)
         return res.status(500).json({ error: 'Could not save gallery images.' })
       }
@@ -86,6 +89,9 @@ export function createGalleryRouter() {
       if (!updated) return res.status(404).json({ error: 'Not found.' })
       return res.json({ ok: true, item: mapItem(updated) })
     } catch (e) {
+      if (e?.code === 'GALLERY_CONFLICT') {
+        return res.status(409).json({ error: e.message, field: e.field })
+      }
       console.error('gallery meta update:', e)
       return res.status(500).json({ error: 'Could not update gallery item.' })
     }

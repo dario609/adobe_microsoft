@@ -217,10 +217,10 @@ export function AdminSettingsPanel() {
   }
 
   const sitePlaceholder = sitePasswordSet
-    ? 'Password saved — enter new to change'
-    : 'Enter user site password'
+    ? ''
+    : ''
   const adminPlaceholder = adminPasswordSet
-    ? 'Password saved — enter new to change'
+    ? 'Password'
     : 'Enter admin password'
 
   return (
@@ -268,8 +268,9 @@ export function AdminSettingsPanel() {
           <input
             id="site-password"
             className="adminSettings__input"
-            type="password"
-            autoComplete="new-password"
+            type="text"
+            autoComplete="off"
+            spellCheck="false"
             value={sitePasswordInput}
             onChange={(e) => setSitePasswordInput(e.target.value)}
             placeholder={sitePlaceholder}
@@ -311,8 +312,9 @@ export function AdminSettingsPanel() {
           <input
             id="admin-password"
             className="adminSettings__input"
-            type="password"
-            autoComplete="new-password"
+            type="text"
+            autoComplete="off"
+            spellCheck="false"
             value={adminPasswordInput}
             onChange={(e) => setAdminPasswordInput(e.target.value)}
             placeholder={adminPlaceholder}
