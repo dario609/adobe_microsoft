@@ -23,6 +23,9 @@ function apiFailureMessage(res, data, op = 'load') {
   const raw = typeof data?._text === 'string' ? data._text : ''
   const err = typeof data?.error === 'string' ? data.error : ''
   if (isHtmlErrorPayload(raw)) {
+    if (op === 'saveMeta') {
+      return 'Could not save changes: API returned 404 (missing POST /api/gallery/:id/meta). Redeploy the latest backend on Render, or set VITE_API_BASE_URL to your Render API URL and rebuild the frontend.'
+    }
     if (op === 'patch') {
       return 'Could not save changes: API returned 404 (missing PATCH /api/gallery/:id). Redeploy the latest backend, or set VITE_API_BASE_URL to your Render API URL.'
     }
@@ -48,6 +51,8 @@ export function AdminGalleryPanel() {
   const [actionError, setActionError] = useState('')
   const [uploadTemplateId, setUploadTemplateId] = useState('')
   const [draftById, setDraftById] = useState({})
+
+  const looksLikeGitHubToken = (s) => /^ghp_[a-zA-Z0-9]{20,}/i.test(String(s || '').trim())
 
   const load = useCallback(async () => {
     setLoadError('')
@@ -139,19 +144,34 @@ export function AdminGalleryPanel() {
   const saveMeta = async (id) => {
     const d = draftById[id]
     if (!d) return
+    if (looksLikeGitHubToken(d.templateId)) {
+      setActionError(
+        'Template ID looks like a GitHub token (starts with ghp_). Use an Adobe Express template URN (urn:aaid:…), not a GitHub secret. Remove this value and revoke that token on GitHub if it was exposed.'
+      )
+      return
+    }
     setActionError('')
     setBusy(true)
     try {
-      const res = await apiFetch(`/api/gallery/${encodeURIComponent(id)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          templateId: d.templateId,
-          originalName: d.originalName,
-        }),
+      const body = JSON.stringify({
+        templateId: d.templateId,
+        originalName: d.originalName,
       })
-      const data = await parseJson(res)
-      if (!res.ok) throw new Error(apiFailureMessage(res, data, 'patch') || 'Update failed.')
+      let res = await apiFetch(`/api/gallery/${encodeURIComponent(id)}/meta`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      })
+      let data = await parseJson(res)
+      if (res.status === 404) {
+        res = await apiFetch(`/api/gallery/${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+        })
+        data = await parseJson(res)
+      }
+      if (!res.ok) throw new Error(apiFailureMessage(res, data, 'saveMeta') || 'Update failed.')
       const it = data?.item
       if (it?.id) {
         setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, ...it } : x)))

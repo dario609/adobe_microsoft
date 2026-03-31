@@ -76,7 +76,7 @@ export function createGalleryRouter() {
     })
   })
 
-  router.patch('/gallery/:id', async (req, res) => {
+  async function handleGalleryMetaUpdate(req, res) {
     try {
       const { templateId, originalName } = req.body || {}
       const patch = {}
@@ -86,10 +86,15 @@ export function createGalleryRouter() {
       if (!updated) return res.status(404).json({ error: 'Not found.' })
       return res.json({ ok: true, item: mapItem(updated) })
     } catch (e) {
-      console.error('gallery patch:', e)
+      console.error('gallery meta update:', e)
       return res.status(500).json({ error: 'Could not update gallery item.' })
     }
-  })
+  }
+
+  /** PATCH — preferred */
+  router.patch('/gallery/:id', handleGalleryMetaUpdate)
+  /** POST alias (same body); use when PATCH is blocked or older proxies omit PATCH routes) */
+  router.post('/gallery/:id/meta', handleGalleryMetaUpdate)
 
   router.post('/gallery/:id/replace', (req, res) => {
     uploadGalleryPngSingle(req, res, async (err) => {
