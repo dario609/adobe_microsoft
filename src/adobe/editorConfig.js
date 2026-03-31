@@ -45,7 +45,7 @@ export function getEditorContainerConfig() {
 
 /** @param {string} [overrideTemplateId] — from gallery pick; falls back to env */
 export function getDocumentConfig(overrideTemplateId) {
-  const tid = String(overrideTemplateId || '').trim() || ADOBE_TEMPLATE_ID
+  const tid = String(overrideTemplateId ?? '').trim() || String(ADOBE_TEMPLATE_ID || '').trim()
   if (tid) {
     return { kind: 'template', templateId: tid }
   }

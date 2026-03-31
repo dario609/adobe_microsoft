@@ -11,7 +11,7 @@ export function getGalleryPickId() {
 
 export function getGalleryTemplateId() {
   try {
-    return sessionStorage.getItem(GALLERY_TEMPLATE_KEY) || ''
+    return (sessionStorage.getItem(GALLERY_TEMPLATE_KEY) || '').trim()
   } catch {
     return ''
   }
@@ -21,7 +21,7 @@ export function setGalleryPickId(id, templateId = '') {
   try {
     if (id) sessionStorage.setItem(GALLERY_PICK_KEY, id)
     else sessionStorage.removeItem(GALLERY_PICK_KEY)
-    const t = String(templateId || '').trim()
+    const t = String(templateId ?? '').trim()
     if (t) sessionStorage.setItem(GALLERY_TEMPLATE_KEY, t)
     else sessionStorage.removeItem(GALLERY_TEMPLATE_KEY)
   } catch {

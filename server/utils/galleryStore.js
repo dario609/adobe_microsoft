@@ -31,11 +31,12 @@ export function getGalleryFilePath(id) {
   return path.join(GALLERY_DIR, `${safe}.png`)
 }
 
+/** Adobe URNs can be long (e.g. brand templates with a path segment); do not truncate aggressively. */
 export function normalizeTemplateId(v) {
   if (v == null) return ''
   const s = String(v).trim()
   if (!s) return ''
-  return s.slice(0, 128)
+  return s.slice(0, 4096)
 }
 
 export async function listGalleryItems() {

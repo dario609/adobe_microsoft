@@ -10,16 +10,32 @@ async function parseJson(res) {
   return { _text: text }
 }
 
-/** Express/HTML error pages → short actionable message. */
-function apiFailureMessage(res, data) {
-  const raw = typeof data?._text === 'string' ? data._text : ''
-  const err = typeof data?.error === 'string' ? data.error : ''
-  if (
+function isHtmlErrorPayload(raw) {
+  return (
     raw.includes('<!DOCTYPE') ||
     raw.includes('<pre>') ||
     /Cannot\s+(GET|POST|PATCH|PUT|DELETE)\s+\//i.test(raw)
-  ) {
-    return 'Gallery API missing on the server (redeploy backend), or wrong VITE_API_BASE_URL.'
+  )
+}
+
+/** Express/HTML error pages → short actionable message. */
+function apiFailureMessage(res, data, op = 'load') {
+  const raw = typeof data?._text === 'string' ? data._text : ''
+  const err = typeof data?.error === 'string' ? data.error : ''
+  if (isHtmlErrorPayload(raw)) {
+    if (op === 'patch') {
+      return 'Could not save changes: API returned 404 (missing PATCH /api/gallery/:id). Redeploy the latest backend, or set VITE_API_BASE_URL to your Render API URL.'
+    }
+    if (op === 'replace') {
+      return 'Could not replace image: API returned 404 (missing POST /api/gallery/:id/replace). Redeploy the latest backend, or fix VITE_API_BASE_URL.'
+    }
+    if (op === 'upload') {
+      return 'Upload failed: API returned 404 (missing POST /api/gallery). Redeploy the latest backend, or fix VITE_API_BASE_URL.'
+    }
+    if (op === 'delete') {
+      return 'Could not remove: API returned 404. Redeploy the latest backend, or fix VITE_API_BASE_URL.'
+    }
+    return 'Could not load gallery: API unreachable or wrong VITE_API_BASE_URL. Point it at your Render service URL and redeploy.'
   }
   return err || raw || `Request failed (${res.status}).`
 }
@@ -28,18 +44,20 @@ export function AdminGalleryPanel() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
+  const [loadError, setLoadError] = useState('')
+  const [actionError, setActionError] = useState('')
   const [uploadTemplateId, setUploadTemplateId] = useState('')
   const [draftById, setDraftById] = useState({})
 
   const load = useCallback(async () => {
-    setError('')
+    setLoadError('')
+    setActionError('')
     setLoading(true)
     try {
       const res = await apiFetch('/api/gallery', { cache: 'no-store' })
       const data = await parseJson(res)
       if (!res.ok) {
-        throw new Error(apiFailureMessage(res, data) || 'Could not load gallery.')
+        throw new Error(apiFailureMessage(res, data, 'load') || 'Could not load gallery.')
       }
       const list = Array.isArray(data?.items) ? data.items : []
       setItems(list)
@@ -52,7 +70,7 @@ export function AdminGalleryPanel() {
       }
       setDraftById(next)
     } catch (e) {
-      setError(e?.message || 'Could not load gallery.')
+      setLoadError(e?.message || 'Could not load gallery.')
       setItems([])
     } finally {
       setLoading(false)
@@ -79,7 +97,7 @@ export function AdminGalleryPanel() {
     const res = await apiFetch('/api/gallery', { method: 'POST', body: fd })
     const data = await parseJson(res)
     if (!res.ok) {
-      throw new Error(apiFailureMessage(res, data) || `Upload failed (${res.status}).`)
+      throw new Error(apiFailureMessage(res, data, 'upload') || `Upload failed (${res.status}).`)
     }
     const added = Array.isArray(data?.items) ? data.items : []
     if (added.length) {
@@ -105,14 +123,14 @@ export function AdminGalleryPanel() {
     const files = Array.from(e.target.files || [])
     e.target.value = ''
     if (!files.length) return
-    setError('')
+    setActionError('')
     setBusy(true)
     try {
       for (const f of files) {
         await uploadOne(f)
       }
     } catch (err) {
-      setError(err?.message || 'Upload failed.')
+      setActionError(err?.message || 'Upload failed.')
     } finally {
       setBusy(false)
     }
@@ -121,7 +139,7 @@ export function AdminGalleryPanel() {
   const saveMeta = async (id) => {
     const d = draftById[id]
     if (!d) return
-    setError('')
+    setActionError('')
     setBusy(true)
     try {
       const res = await apiFetch(`/api/gallery/${encodeURIComponent(id)}`, {
@@ -133,7 +151,7 @@ export function AdminGalleryPanel() {
         }),
       })
       const data = await parseJson(res)
-      if (!res.ok) throw new Error(apiFailureMessage(res, data) || 'Update failed.')
+      if (!res.ok) throw new Error(apiFailureMessage(res, data, 'patch') || 'Update failed.')
       const it = data?.item
       if (it?.id) {
         setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, ...it } : x)))
@@ -142,14 +160,14 @@ export function AdminGalleryPanel() {
         await load()
       }
     } catch (err) {
-      setError(err?.message || 'Update failed.')
+      setActionError(err?.message || 'Update failed.')
     } finally {
       setBusy(false)
     }
   }
 
   const replacePng = async (id, file) => {
-    setError('')
+    setActionError('')
     setBusy(true)
     try {
       const fd = new FormData()
@@ -159,7 +177,7 @@ export function AdminGalleryPanel() {
         body: fd,
       })
       const data = await parseJson(res)
-      if (!res.ok) throw new Error(apiFailureMessage(res, data) || 'Replace failed.')
+      if (!res.ok) throw new Error(apiFailureMessage(res, data, 'replace') || 'Replace failed.')
       const it = data?.item
       if (it?.id) {
         setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, ...it } : x)))
@@ -167,19 +185,19 @@ export function AdminGalleryPanel() {
         await load()
       }
     } catch (err) {
-      setError(err?.message || 'Replace failed.')
+      setActionError(err?.message || 'Replace failed.')
     } finally {
       setBusy(false)
     }
   }
 
   const remove = async (id) => {
-    setError('')
+    setActionError('')
     setBusy(true)
     try {
       const res = await apiFetch(`/api/gallery/${encodeURIComponent(id)}`, { method: 'DELETE' })
       const data = await parseJson(res)
-      if (!res.ok) throw new Error(apiFailureMessage(res, data) || 'Remove failed.')
+      if (!res.ok) throw new Error(apiFailureMessage(res, data, 'delete') || 'Remove failed.')
       setItems((prev) => prev.filter((p) => p.id !== id))
       setDraftById((prev) => {
         const next = { ...prev }
@@ -187,7 +205,7 @@ export function AdminGalleryPanel() {
         return next
       })
     } catch (err) {
-      setError(err?.message || 'Remove failed.')
+      setActionError(err?.message || 'Remove failed.')
     } finally {
       setBusy(false)
     }
@@ -216,7 +234,7 @@ export function AdminGalleryPanel() {
             </label>
             <input
               id="upload-template-id"
-              className="adminGallery__textInput"
+              className="adminGallery__textInput adminGallery__textInput--template"
               type="text"
               placeholder="Applied to uploads below"
               value={uploadTemplateId}
@@ -234,12 +252,18 @@ export function AdminGalleryPanel() {
           </a>
         </div>
         <p className="adminGallery__toolbarHint">
-          Optional template ID opens that design when a guest selects this image and taps Start.
+          Paste the full Adobe template URN (e.g. <code className="adminGallery__code">urn:aaid:sc:…</code>) — long
+          IDs are supported. Guests get this template when they select the image and tap Start.
         </p>
       </div>
-      {error ? (
+      {loadError ? (
         <p className="appError appError--standalone adminGallery__error" role="alert">
-          {error}
+          {loadError}
+        </p>
+      ) : null}
+      {actionError ? (
+        <p className="adminGallery__actionError" role="alert">
+          {actionError}
         </p>
       ) : null}
       {loading ? <p className="adminGallery__loading">Loading gallery…</p> : null}
@@ -270,7 +294,7 @@ export function AdminGalleryPanel() {
               </label>
               <input
                 id={`tpl-${it.id}`}
-                className="adminGallery__textInput"
+                className="adminGallery__textInput adminGallery__textInput--template"
                 type="text"
                 placeholder="Optional"
                 value={d.templateId}

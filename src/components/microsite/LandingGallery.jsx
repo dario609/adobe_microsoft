@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { apiUrl } from '../../api/apiBase.js'
-import { getGalleryPickId, setGalleryPickId } from '../../constants/gallerySelection.js'
+import { getGalleryPickId, getGalleryTemplateId, setGalleryPickId } from '../../constants/gallerySelection.js'
 
 export function LandingGallery({ onSelectionChange }) {
   const [items, setItems] = useState([])
@@ -30,6 +30,17 @@ export function LandingGallery({ onSelectionChange }) {
   useEffect(() => {
     load()
   }, [load])
+
+  /** After /api/gallery loads, sync sessionStorage template from server so Start uses the saved URN. */
+  useEffect(() => {
+    if (!items.length || !selectedId) return
+    const it = items.find((x) => x.id === selectedId)
+    if (!it) return
+    const tid = it.templateId || ''
+    if (getGalleryPickId() === it.id && getGalleryTemplateId() === tid) return
+    setGalleryPickId(it.id, tid)
+    onSelectionChange?.()
+  }, [items, selectedId, onSelectionChange])
 
   const updateScrollButtons = useCallback(() => {
     const el = railRef.current

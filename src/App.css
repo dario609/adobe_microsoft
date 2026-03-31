@@ -852,6 +852,17 @@
   color: #64748b;
 }
 
+.adminGallery__actionError {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: #9a3412;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+}
+
 .adminGallery__field {
   display: flex;
   flex-direction: column;
@@ -881,6 +892,18 @@
 .adminGallery__textInput:focus {
   outline: 2px solid color-mix(in srgb, #6366f1 35%, transparent);
   outline-offset: 1px;
+}
+
+.adminGallery__textInput--template {
+  font-family: ui-monospace, system-ui, monospace;
+  font-size: 0.8125rem;
+  word-break: break-all;
+}
+
+.adminGallery__code {
+  font-family: ui-monospace, system-ui, monospace;
+  font-size: 0.78em;
+  word-break: break-all;
 }
 
 .adminGallery__miniLabel {
