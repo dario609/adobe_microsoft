@@ -14,3 +14,10 @@ export const uploadGalleryPngs = multer({
   limits: { fileSize: BANNER_MAX_BYTES, files: 30 },
   fileFilter: pngFilter,
 }).array('images', 30)
+
+/** Single PNG replace for gallery (field name: `image`). */
+export const uploadGalleryPngSingle = multer({
+  storage: memory,
+  limits: { fileSize: BANNER_MAX_BYTES, files: 1 },
+  fileFilter: pngFilter,
+}).single('image')

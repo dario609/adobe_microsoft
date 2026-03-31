@@ -31,11 +31,18 @@ export function getGalleryFilePath(id) {
   return path.join(GALLERY_DIR, `${safe}.png`)
 }
 
+export function normalizeTemplateId(v) {
+  if (v == null) return ''
+  const s = String(v).trim()
+  if (!s) return ''
+  return s.slice(0, 128)
+}
+
 export async function listGalleryItems() {
   return readManifest()
 }
 
-/** @param {Buffer} buffer @param {{ originalName: string, bytes: number }} meta */
+/** @param {Buffer} buffer @param {{ originalName: string, bytes: number, templateId?: string }} meta */
 export async function addGalleryPng(buffer, meta) {
   await ensureDir()
   const id = crypto.randomUUID()
@@ -47,6 +54,7 @@ export async function addGalleryPng(buffer, meta) {
     originalName: meta.originalName || 'image.png',
     bytes: meta.bytes,
     uploadedAt: new Date().toISOString(),
+    templateId: normalizeTemplateId(meta.templateId),
   }
   const items = await readManifest()
   items.unshift(entry)
@@ -70,4 +78,32 @@ export async function deleteGalleryItem(id) {
 export async function getGalleryItem(id) {
   const items = await readManifest()
   return items.find((x) => x.id === id) || null
+}
+
+/** @param {string} id @param {{ templateId?: string, originalName?: string }} patch */
+export async function updateGalleryItem(id, patch) {
+  const items = await readManifest()
+  const idx = items.findIndex((x) => x.id === id)
+  if (idx < 0) return null
+  const cur = items[idx]
+  const next = { ...cur }
+  if (patch.templateId !== undefined) next.templateId = normalizeTemplateId(patch.templateId)
+  if (patch.originalName !== undefined) next.originalName = String(patch.originalName || 'image.png').slice(0, 240)
+  items[idx] = next
+  await writeManifest(items)
+  return next
+}
+
+export async function replaceGalleryPng(id, buffer) {
+  const p = getGalleryFilePath(id)
+  if (!p) throw new Error('Invalid id')
+  const items = await readManifest()
+  const idx = items.findIndex((x) => x.id === id)
+  if (idx < 0) return null
+  await ensureDir()
+  await fs.writeFile(p, buffer)
+  const next = { ...items[idx], bytes: buffer.length, uploadedAt: new Date().toISOString() }
+  items[idx] = next
+  await writeManifest(items)
+  return next
 }

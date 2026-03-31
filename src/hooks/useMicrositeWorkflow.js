@@ -8,7 +8,7 @@ import { tryAutomatePublishExport } from '../adobe/tryAutomatePublishExport.js'
 import { FINISH_AFTER_NAME_BANNER } from '../constants/flow.js'
 import { blobFromAdobeExport, getPublishAssetPayload } from '../utils/adobeAsset.js'
 import { friendlyExportFailure } from '../utils/uploadErrors.js'
-import { clearGalleryPick } from '../constants/gallerySelection.js'
+import { clearGalleryPick, getGalleryTemplateId } from '../constants/gallerySelection.js'
 
 export function useMicrositeWorkflow() {
   const { sessionSeconds, showSessionTimer } = useRuntimeConfig()
@@ -133,8 +133,9 @@ export function useMicrositeWorkflow() {
     const editor = editorRef.current
     if (!editor || launchedRef.current || status !== 'ready') return
 
-    if (REQUIRE_ADOBE_TEMPLATE && !ADOBE_TEMPLATE_ID) {
-      setError('Set VITE_ADOBE_TEMPLATE_ID in .env for a predefined template, then restart Vite.')
+    const galleryTemplate = getGalleryTemplateId().trim()
+    if (REQUIRE_ADOBE_TEMPLATE && !ADOBE_TEMPLATE_ID && !galleryTemplate) {
+      setError('Choose a gallery image that has a template ID, or set VITE_ADOBE_TEMPLATE_ID in .env.')
       return
     }
 
@@ -197,7 +198,8 @@ export function useMicrositeWorkflow() {
       }
 
       try {
-        openEditor(editor, appConfig)
+        const templateOverride = galleryTemplate || ADOBE_TEMPLATE_ID
+        openEditor(editor, appConfig, templateOverride)
       } catch (e) {
         launchedRef.current = false
         setPhase('landing')
@@ -239,9 +241,9 @@ export function useMicrositeWorkflow() {
     setShowNameModal(false)
   }, [])
 
-  const templateConfigured = Boolean(ADOBE_TEMPLATE_ID)
-  const canStart =
-    status === 'ready' && (!REQUIRE_ADOBE_TEMPLATE || templateConfigured)
+  const galleryTemplate = typeof window !== 'undefined' ? getGalleryTemplateId().trim() : ''
+  const templateConfigured = Boolean(ADOBE_TEMPLATE_ID) || Boolean(galleryTemplate)
+  const canStart = status === 'ready' && (!REQUIRE_ADOBE_TEMPLATE || templateConfigured)
 
   return {
     brandName: BRAND_NAME,

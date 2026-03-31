@@ -15,3 +15,6 @@ export const ADOBE_TEMPLATE_ID = import.meta.env.VITE_ADOBE_TEMPLATE_ID?.trim() 
  * When true, Start is disabled until VITE_ADOBE_TEMPLATE_ID is set (enforces template-based sessions).
  */
 export const REQUIRE_ADOBE_TEMPLATE = import.meta.env.VITE_REQUIRE_ADOBE_TEMPLATE === 'true'
+
+/** Adobe Express template browser (lookup template IDs). */
+export const ADOBE_EXPLORE_TEMPLATES_URL = 'https://express.adobe.com/explore/templates'

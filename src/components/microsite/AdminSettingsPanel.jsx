@@ -143,7 +143,7 @@ export function AdminSettingsPanel() {
             onChange={(e) => setSessionSeconds(e.target.value)}
             disabled={saving || loading || unsupported}
           />
-          <button type="submit" className="btn btn--dark btn--small" disabled={saving || loading || unsupported}>
+          <button type="submit" className="btn btn--adminGradient btn--small" disabled={saving || loading || unsupported}>
             Save timer
           </button>
         </form>
@@ -170,7 +170,7 @@ export function AdminSettingsPanel() {
             placeholder="Enter new password"
             disabled={saving || loading || unsupported}
           />
-          <button type="submit" className="btn btn--dark btn--small" disabled={saving || loading || unsupported}>
+          <button type="submit" className="btn btn--adminGradient btn--small" disabled={saving || loading || unsupported}>
             Save password settings
           </button>
         </form>

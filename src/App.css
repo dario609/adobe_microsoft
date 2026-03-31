@@ -637,6 +637,102 @@
   color: var(--text);
 }
 
+.adminCard--hero {
+  padding: 22px 20px 20px;
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow:
+    0 20px 50px rgba(15, 23, 42, 0.08),
+    0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.adminCard__eyebrow {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.btn--adminGradient {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: none;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #ffffff;
+  text-decoration: none;
+  cursor: pointer;
+  background: linear-gradient(92deg, #ef4444 0%, #f97316 28%, #a855f7 62%, #2563eb 100%);
+  box-shadow:
+    0 10px 22px rgba(168, 85, 247, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.btn--adminGradient:hover {
+  filter: brightness(1.05);
+}
+
+.btn--adminGradient:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--adminSoft {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #0f172a;
+  background: #f8fafc;
+  cursor: pointer;
+}
+
+.btn--adminSoft:hover {
+  background: #f1f5f9;
+}
+
+.btn--adminGradient.btn--small,
+.btn--adminSoft.btn--small {
+  padding: 8px 12px;
+  font-size: 0.8125rem;
+}
+
+.btn--adminDanger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid #fecaca;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: #991b1b;
+  background: #fef2f2;
+  cursor: pointer;
+}
+
+.btn--adminDanger:hover {
+  background: #fee2e2;
+}
+
+.adminGallery__linkBtn {
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
 .adminTableWrap {
   overflow-x: auto;
   border: 1px solid var(--border);
@@ -731,15 +827,93 @@
 }
 
 .adminGallery {
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
-.adminGallery__uploadRow {
+.adminGallery__toolbar {
+  margin-bottom: 16px;
+  padding: 14px 14px 12px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 55%, #eef2ff 100%);
+}
+
+.adminGallery__toolbarRow {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+}
+
+.adminGallery__toolbarHint {
+  margin: 10px 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.adminGallery__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: min(100%, 220px);
+  flex: 1 1 200px;
+}
+
+.adminGallery__fieldLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.adminGallery__textInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  font: inherit;
+  font-size: 0.875rem;
+  color: #0f172a;
+  background: #fff;
+}
+
+.adminGallery__textInput:focus {
+  outline: 2px solid color-mix(in srgb, #6366f1 35%, transparent);
+  outline-offset: 1px;
+}
+
+.adminGallery__miniLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.adminGallery__templatesLink {
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  align-self: center;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4338ca;
+  background: #eef2ff;
+  text-decoration: none;
+  border: 1px solid #c7d2fe;
+}
+
+.adminGallery__templatesLink:hover {
+  background: #e0e7ff;
+}
+
+.adminGallery__cardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 .adminGallery__fileLabel {
@@ -776,8 +950,8 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
 }
 
 .adminGallery__empty {
@@ -794,11 +968,12 @@
 .adminGallery__card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px;
+  gap: 6px;
+  padding: 12px;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 14px;
   background: #fff;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
 }
 
 .adminGallery__thumbWrap {

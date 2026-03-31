@@ -43,15 +43,18 @@ export function getEditorContainerConfig() {
   return INLINE_CONTAINER_CONFIG
 }
 
-export function getDocumentConfig() {
-  if (ADOBE_TEMPLATE_ID) {
-    return { kind: 'template', templateId: ADOBE_TEMPLATE_ID }
+/** @param {string} [overrideTemplateId] — from gallery pick; falls back to env */
+export function getDocumentConfig(overrideTemplateId) {
+  const tid = String(overrideTemplateId || '').trim() || ADOBE_TEMPLATE_ID
+  if (tid) {
+    return { kind: 'template', templateId: tid }
   }
   return { kind: 'blank', canvasSize: 'BusinessCard' }
 }
 
-export function openEditor(editor, appConfig) {
-  const doc = getDocumentConfig()
+/** @param {string} [overrideTemplateId] */
+export function openEditor(editor, appConfig, overrideTemplateId) {
+  const doc = getDocumentConfig(overrideTemplateId)
   const container = getEditorContainerConfig()
 
   if (doc.kind === 'template') {

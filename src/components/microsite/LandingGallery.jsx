@@ -60,9 +60,9 @@ export function LandingGallery({ onSelectionChange }) {
     }
   }, [updateScrollButtons])
 
-  const pick = (id) => {
-    setSelectedId(id)
-    setGalleryPickId(id)
+  const pick = (it) => {
+    setSelectedId(it.id)
+    setGalleryPickId(it.id, it.templateId || '')
     onSelectionChange?.()
   }
 
@@ -102,7 +102,7 @@ export function LandingGallery({ onSelectionChange }) {
                   <button
                     type="button"
                     className={`landGallery__thumbBtn${active ? ' landGallery__thumbBtn--active' : ''}`}
-                    onClick={() => pick(it.id)}
+                    onClick={() => pick(it)}
                     aria-pressed={active}
                   >
                     <img className="landGallery__thumb" src={src} alt="" loading="lazy" />

@@ -1,7 +1,25 @@
 import { Router } from 'express'
 import fs from 'node:fs'
-import { uploadGalleryPngs } from '../middleware/galleryUpload.js'
-import { addGalleryPng, deleteGalleryItem, getGalleryFilePath, listGalleryItems } from '../utils/galleryStore.js'
+import { uploadGalleryPngs, uploadGalleryPngSingle } from '../middleware/galleryUpload.js'
+import {
+  addGalleryPng,
+  deleteGalleryItem,
+  getGalleryFilePath,
+  listGalleryItems,
+  normalizeTemplateId,
+  replaceGalleryPng,
+  updateGalleryItem,
+} from '../utils/galleryStore.js'
+
+function mapItem(it) {
+  return {
+    id: it.id,
+    originalName: it.originalName,
+    bytes: it.bytes,
+    uploadedAt: it.uploadedAt,
+    templateId: it.templateId || '',
+  }
+}
 
 export function createGalleryRouter() {
   const router = Router()
@@ -10,12 +28,7 @@ export function createGalleryRouter() {
     try {
       const items = await listGalleryItems()
       res.json({
-        items: items.map((it) => ({
-          id: it.id,
-          originalName: it.originalName,
-          bytes: it.bytes,
-          uploadedAt: it.uploadedAt,
-        })),
+        items: items.map(mapItem),
       })
     } catch (e) {
       console.error('gallery list:', e)
@@ -42,6 +55,7 @@ export function createGalleryRouter() {
       if (!Array.isArray(files) || files.length === 0) {
         return res.status(400).json({ error: 'No PNG files uploaded (use field name "images").' })
       }
+      const templateId = normalizeTemplateId(req.body?.templateId)
       const added = []
       try {
         for (const f of files) {
@@ -50,13 +64,49 @@ export function createGalleryRouter() {
           const entry = await addGalleryPng(buf, {
             originalName: f.originalname || 'image.png',
             bytes: buf.length,
+            templateId,
           })
           added.push(entry)
         }
-        return res.json({ ok: true, items: added })
+        return res.json({ ok: true, items: added.map(mapItem) })
       } catch (e) {
         console.error('gallery upload:', e)
         return res.status(500).json({ error: 'Could not save gallery images.' })
+      }
+    })
+  })
+
+  router.patch('/gallery/:id', async (req, res) => {
+    try {
+      const { templateId, originalName } = req.body || {}
+      const patch = {}
+      if (templateId !== undefined) patch.templateId = templateId
+      if (originalName !== undefined) patch.originalName = originalName
+      const updated = await updateGalleryItem(req.params.id, patch)
+      if (!updated) return res.status(404).json({ error: 'Not found.' })
+      return res.json({ ok: true, item: mapItem(updated) })
+    } catch (e) {
+      console.error('gallery patch:', e)
+      return res.status(500).json({ error: 'Could not update gallery item.' })
+    }
+  })
+
+  router.post('/gallery/:id/replace', (req, res) => {
+    uploadGalleryPngSingle(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({ error: err.message || String(err) })
+      }
+      const buf = req.file?.buffer
+      if (!buf?.length) {
+        return res.status(400).json({ error: 'No PNG file (field name "image").' })
+      }
+      try {
+        const updated = await replaceGalleryPng(req.params.id, buf)
+        if (!updated) return res.status(404).json({ error: 'Not found.' })
+        return res.json({ ok: true, item: mapItem(updated) })
+      } catch (e) {
+        console.error('gallery replace:', e)
+        return res.status(500).json({ error: 'Could not replace image.' })
       }
     })
   })
