@@ -12,7 +12,13 @@ export function createApp() {
       origin: true,
       credentials: true,
       methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Site-Token', 'X-Requested-With'],
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Site-Token',
+        'X-Admin-Token',
+        'X-Requested-With',
+      ],
     })
   )
   app.use(express.json())

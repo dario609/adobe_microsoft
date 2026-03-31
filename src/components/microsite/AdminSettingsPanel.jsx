@@ -217,16 +217,16 @@ export function AdminSettingsPanel() {
   }
 
   const sitePlaceholder = sitePasswordSet
-    ? ''
-    : ''
+    ? 'Password saved — enter new to change'
+    : 'Enter user site password'
   const adminPlaceholder = adminPasswordSet
-    ? 'Password'
+    ? 'Password saved — enter new to change'
     : 'Enter admin password'
 
   return (
     <section className="adminCard adminCard--light adminSettings">
       <h2 className="adminCard__title adminCard__title--small">Session settings</h2>
-      <p className="adminCard__sub adminCard__sub--dark">Timer, user site gate, and admin panel access.</p>
+      <p className="adminCard__sub adminCard__sub--dark">Timer, visitor site gate, and operator admin access.</p>
       {loading ? <p className="adminGallery__loading">Loading settings…</p> : null}
       {err ? <p className="appError adminGallery__error">{err}</p> : null}
       {msg ? <p className="adminSettings__ok">{msg}</p> : null}
@@ -251,8 +251,11 @@ export function AdminSettingsPanel() {
           </button>
         </form>
 
-        <form className="adminSettings__card" onSubmit={saveSitePassword}>
-          <p className="adminSettings__cardTitle">User site password</p>
+        <form className="adminSettings__card adminSettings__card--site" onSubmit={saveSitePassword}>
+          <div className="adminSettings__cardHead">
+            <span className="adminSettings__badge adminSettings__badge--site">Site</span>
+            <p className="adminSettings__cardTitle">User site password</p>
+          </div>
           <label className="adminSettings__check">
             <input
               type="checkbox"
@@ -267,7 +270,7 @@ export function AdminSettingsPanel() {
           </label>
           <input
             id="site-password"
-            className="adminSettings__input"
+            className="adminSettings__input adminSettings__input--pw"
             type="text"
             autoComplete="off"
             spellCheck="false"
@@ -291,11 +294,14 @@ export function AdminSettingsPanel() {
           </div>
         </form>
 
-        <form className="adminSettings__card" onSubmit={saveAdminPassword}>
-          <p className="adminSettings__cardTitle">Admin panel password</p>
+        <form className="adminSettings__card adminSettings__card--admin" onSubmit={saveAdminPassword}>
+          <div className="adminSettings__cardHead">
+            <span className="adminSettings__badge adminSettings__badge--admin">Admin</span>
+            <p className="adminSettings__cardTitle">Operator password</p>
+          </div>
           <p className="adminSettings__hint">
-            When set, the <code className="adminSettings__code">/admin</code> page requires this password before showing
-            templates and settings.
+            Protects <code className="adminSettings__code">/admin</code> (gallery &amp; these settings). Separate from the
+            visitor site password above.
           </p>
           <label className="adminSettings__check">
             <input
@@ -311,7 +317,7 @@ export function AdminSettingsPanel() {
           </label>
           <input
             id="admin-password"
-            className="adminSettings__input"
+            className="adminSettings__input adminSettings__input--pw"
             type="text"
             autoComplete="off"
             spellCheck="false"
