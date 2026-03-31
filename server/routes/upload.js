@@ -1,8 +1,15 @@
 import { Router } from 'express'
 import { requireSiteGate } from '../middleware/requireSiteGate.js'
 import { uploadSingleDesign } from '../middleware/upload.js'
+import { uploadRateLimiter } from '../middleware/uploadRateLimit.js'
 import { getDropboxClient } from '../dropbox/client.js'
-import { buildDropboxFilePath, ensureImageExtension, safeFilename } from '../utils/filename.js'
+import {
+  buildDropboxFilePath,
+  ensureImageExtension,
+  safeFilename,
+  validateUploadFilenameField,
+} from '../utils/filename.js'
+import { runUploadWithIdempotency } from '../utils/idempotencyUpload.js'
 import { appendUploadHistory, listUploadHistory } from '../utils/uploadHistory.js'
 
 /** Shown to guests in the app UI (non-technical). */
@@ -34,71 +41,144 @@ function readDropboxSummary(err) {
   }
 }
 
+/**
+ * @param {import('express').Request} req
+ * @returns {Promise<{ statusCode: number, body: Record<string, unknown> }>}
+ */
+async function performUpload(req) {
+  const buffer = req.file?.buffer
+  if (!buffer?.length) {
+    return { statusCode: 400, body: { error: 'Missing file upload.' } }
+  }
+
+  const nameCheck = validateUploadFilenameField(req.body?.filename)
+  if (!nameCheck.ok) {
+    return { statusCode: 400, body: { error: nameCheck.message, code: nameCheck.code } }
+  }
+
+  const baseName = safeFilename(req.body.filename)
+  const filename = ensureImageExtension(baseName)
+  const dropboxPath = buildDropboxFilePath(filename)
+
+  const noop = process.env.LOAD_TEST_UPLOAD_NOOP === 'true'
+  if (noop) {
+    const delayMs = Math.min(60000, Math.max(0, Number(process.env.LOAD_TEST_UPLOAD_DELAY_MS || 0)))
+    if (delayMs > 0) {
+      await new Promise((r) => setTimeout(r, delayMs))
+    }
+    await appendUploadHistory({
+      fileName: filename,
+      dropboxPath,
+      bytes: buffer.length,
+      uploadedAt: new Date().toISOString(),
+      loadTestNoop: true,
+    })
+    return {
+      statusCode: 200,
+      body: { ok: true, path: dropboxPath, loadTestNoop: true },
+    }
+  }
+
+  const dbx = getDropboxClient()
+  if (!dbx) {
+    return {
+      statusCode: 503,
+      body: {
+        error: DROPBOX_NOT_READY_USER,
+        code: 'DROPBOX_NOT_CONFIGURED',
+        detail: DROPBOX_NOT_READY_DETAIL,
+      },
+    }
+  }
+
+  const timeoutMs = Math.max(0, Number(process.env.DROPBOX_UPLOAD_TIMEOUT_MS || 0))
+  const uploadPromise = dbx.filesUpload({
+    path: dropboxPath,
+    contents: buffer,
+    mode: { '.tag': 'overwrite' },
+  })
+
+  try {
+    if (timeoutMs > 0) {
+      await Promise.race([
+        uploadPromise,
+        new Promise((_, reject) => {
+          setTimeout(() => {
+            const e = new Error('Dropbox upload timed out.')
+            e.code = 'DROPBOX_UPLOAD_TIMEOUT'
+            reject(e)
+          }, timeoutMs)
+        }),
+      ])
+    } else {
+      await uploadPromise
+    }
+  } catch (err) {
+    if (err?.code === 'DROPBOX_UPLOAD_TIMEOUT') {
+      return {
+        statusCode: 504,
+        body: {
+          error: 'Dropbox did not finish the upload in time. You may retry with the same Idempotency-Key to avoid duplicates if the first attempt actually succeeded.',
+          code: 'DROPBOX_UPLOAD_TIMEOUT',
+        },
+      }
+    }
+    throw err
+  }
+
+  await appendUploadHistory({
+    fileName: filename,
+    dropboxPath,
+    bytes: buffer.length,
+    uploadedAt: new Date().toISOString(),
+  })
+
+  return { statusCode: 200, body: { ok: true, path: dropboxPath } }
+}
+
 export function createUploadRouter() {
   const router = Router()
 
-  // Admin-facing uploads table (no gate by request).
   router.get('/uploads', async (_req, res) => {
     const items = await listUploadHistory()
     res.json({ items })
   })
 
-  router.post('/upload', requireSiteGate, uploadSingleDesign, async (req, res) => {
-    try {
-      const dbx = getDropboxClient()
-      if (!dbx) {
-        return res.status(503).json({
-          error: DROPBOX_NOT_READY_USER,
-          code: 'DROPBOX_NOT_CONFIGURED',
-          detail: DROPBOX_NOT_READY_DETAIL,
-        })
+  router.post(
+    '/upload',
+    requireSiteGate,
+    uploadRateLimiter,
+    uploadSingleDesign,
+    async (req, res) => {
+      const rawIdem = req.headers['idempotency-key']
+      const idemKey = typeof rawIdem === 'string' ? rawIdem : ''
+
+      try {
+        const result = await runUploadWithIdempotency(idemKey, () => performUpload(req))
+        return res.status(result.statusCode).json(result.body)
+      } catch (err) {
+        console.error('Upload error:', err)
+        if (isDropboxTokenExpired(err)) {
+          return res.status(503).json({
+            error:
+              'Dropbox access expired on the server. Ask your administrator to reconnect Dropbox (refresh token or new OAuth).',
+            code: 'DROPBOX_TOKEN_EXPIRED',
+            detail: DROPBOX_TOKEN_EXPIRED_DETAIL,
+          })
+        }
+        if (err?.name === 'DropboxResponseError' && err.status === 400) {
+          const summary = readDropboxSummary(err)
+          return res.status(500).json({
+            error:
+              'Dropbox rejected the upload request. This is usually caused by an invalid Dropbox path or app-folder permissions.',
+            code: 'DROPBOX_BAD_REQUEST',
+            detail: summary || undefined,
+          })
+        }
+        res.status(500).json({ error: err?.message || 'Upload failed.' })
       }
-
-      const buffer = req.file?.buffer
-      if (!buffer?.length) {
-        return res.status(400).json({ error: 'Missing file upload.' })
-      }
-
-      const baseName = safeFilename(req.body?.filename)
-      const filename = ensureImageExtension(baseName)
-      const dropboxPath = buildDropboxFilePath(filename)
-
-      await dbx.filesUpload({
-        path: dropboxPath,
-        contents: buffer,
-        mode: { '.tag': 'overwrite' },
-      })
-
-      await appendUploadHistory({
-        fileName: filename,
-        dropboxPath,
-        bytes: buffer.length,
-        uploadedAt: new Date().toISOString(),
-      })
-
-      res.json({ ok: true, path: dropboxPath })
-    } catch (err) {
-      console.error('Upload error:', err)
-      if (isDropboxTokenExpired(err)) {
-        return res.status(503).json({
-          error:
-            'Dropbox access expired on the server. Ask your administrator to reconnect Dropbox (refresh token or new OAuth).',
-          code: 'DROPBOX_TOKEN_EXPIRED',
-          detail: DROPBOX_TOKEN_EXPIRED_DETAIL,
-        })
-      }
-      if (err?.name === 'DropboxResponseError' && err.status === 400) {
-        const summary = readDropboxSummary(err)
-        return res.status(500).json({
-          error:
-            'Dropbox rejected the upload request. This is usually caused by an invalid Dropbox path or app-folder permissions.',
-          code: 'DROPBOX_BAD_REQUEST',
-          detail: summary || undefined,
-        })
-      }
-      res.status(500).json({ error: err?.message || 'Upload failed.' })
     }
-  })
+  )
 
   return router
 }

@@ -1,5 +1,31 @@
 const IMAGE_EXT = /\.(png|jpg|jpeg|webp)$/i
 
+/** Max length of the client-provided name (before safeFilename rules). Matches safeFilename slice cap. */
+export const MAX_UPLOAD_FILENAME_CHARS = 180
+
+/**
+ * Reject empty/whitespace-only or overlong display names (abuse / bad clients).
+ * @param {unknown} raw
+ * @returns {{ ok: true } | { ok: false, code: string, message: string }}
+ */
+export function validateUploadFilenameField(raw) {
+  if (raw == null) {
+    return { ok: false, code: 'FILENAME_EMPTY', message: 'filename is required.' }
+  }
+  const s = String(raw).trim()
+  if (!s) {
+    return { ok: false, code: 'FILENAME_EMPTY', message: 'filename cannot be empty or whitespace-only.' }
+  }
+  if (s.length > MAX_UPLOAD_FILENAME_CHARS) {
+    return {
+      ok: false,
+      code: 'FILENAME_TOO_LONG',
+      message: `filename must be at most ${MAX_UPLOAD_FILENAME_CHARS} characters.`,
+    }
+  }
+  return { ok: true }
+}
+
 export function safeFilename(name) {
   const base = String(name || 'design')
     .trim()

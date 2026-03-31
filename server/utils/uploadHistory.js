@@ -21,10 +21,19 @@ async function writeItems(items) {
   await fs.writeFile(LOG_PATH, JSON.stringify(items, null, 2), 'utf8')
 }
 
+/** Serialize writes so concurrent uploads do not corrupt upload-history.json. */
+let writeChain = Promise.resolve()
+
 export async function appendUploadHistory(entry) {
-  const prev = await readItems()
-  const next = [{ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, ...entry }, ...prev]
-  await writeItems(next.slice(0, MAX_ITEMS))
+  const run = writeChain.then(async () => {
+    const prev = await readItems()
+    const next = [{ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, ...entry }, ...prev]
+    await writeItems(next.slice(0, MAX_ITEMS))
+  })
+  writeChain = run.catch((err) => {
+    console.error('appendUploadHistory failed:', err)
+  })
+  return run
 }
 
 export async function listUploadHistory() {

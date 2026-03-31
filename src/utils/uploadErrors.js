@@ -24,6 +24,15 @@ export function friendlyUploadFailure(res, data) {
   if (res.status === 413) {
     return 'File is too large to upload.'
   }
+  if (res.status === 429 && data?.code === 'UPLOAD_RATE_LIMIT') {
+    return msg || 'Too many saves in a short time. Wait a moment and try again.'
+  }
+  if (res.status === 400 && (data?.code === 'FILENAME_EMPTY' || data?.code === 'FILENAME_TOO_LONG')) {
+    return msg || 'Please enter a valid name and try again.'
+  }
+  if (res.status === 504 && data?.code === 'DROPBOX_UPLOAD_TIMEOUT') {
+    return msg || 'Saving took too long. Wait a moment — if your design appears in Dropbox, you are done; otherwise try Export & upload again.'
+  }
   if (res.status >= 500) {
     return msg || 'Something went wrong while saving. Please try again.'
   }

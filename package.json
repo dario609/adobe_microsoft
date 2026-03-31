@@ -10,13 +10,18 @@
     "start": "node server/index.js",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "loadtest:k6:edge": "k6 run loadtests/k6/edge-abuse.js",
+    "loadtest:k6:baseline": "k6 run loadtests/k6/baseline.js",
+    "loadtest:k6:event": "k6 run loadtests/k6/event-traffic.js",
+    "loadtest:k6:spike": "k6 run loadtests/k6/spike.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "dropbox": "^10.34.0",
     "express": "^5.2.1",
+    "express-rate-limit": "^7.5.1",
     "multer": "^2.1.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"

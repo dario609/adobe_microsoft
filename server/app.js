@@ -6,6 +6,10 @@ import { createApiRouter } from './routes/index.js'
 export function createApp() {
   const app = express()
 
+  if (['1', 'true', 'yes', 'on'].includes(String(process.env.TRUST_PROXY || '').trim().toLowerCase())) {
+    app.set('trust proxy', 1)
+  }
+
   // Explicit headers so Safari (incl. iPad) preflight succeeds for auth + API calls.
   app.use(
     cors({
@@ -18,6 +22,7 @@ export function createApp() {
         'X-Site-Token',
         'X-Admin-Token',
         'X-Requested-With',
+        'Idempotency-Key',
       ],
     })
   )
