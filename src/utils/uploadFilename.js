@@ -1,6 +1,5 @@
 /**
- * Build Dropbox-safe export basename; server still applies safeFilename / extension rules.
- * Timestamp makes each export unique even if the same guest exports twice.
+ * Dropbox upload basename: sanitized pickup name + local timestamp (unique per export).
  */
 
 export function sanitizePickupBaseForFilename(s) {

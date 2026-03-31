@@ -7,10 +7,10 @@ export const FINISH_AFTER_NAME_BANNER =
 
 export const USER_FLOW_STEPS = [
   'You land on this branded experience.',
-  'Tap Start — Adobe Express opens with your predefined template.',
+  'Tap Start — enter your pickup name, then Adobe Express opens with your template.',
   'Edit your design in the embedded editor.',
   'A session countdown runs while you work.',
-  'Tap Finish — enter the name used for pickup (one field).',
-  'Export from Express — your file uploads to Dropbox automatically.',
+  'Optional: tap Finish to confirm your pickup name before export.',
+  'Export from Express — your file is saved as pickup name plus date & time, uploads to Dropbox.',
   'The session resets so the next guest can begin.',
 ]

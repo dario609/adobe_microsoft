@@ -20,7 +20,7 @@ const INLINE_CONTAINER_CONFIG = {
   loadTimeout: 90000,
   hideCloseButton: true,
   padding: 0,
-  borderRadius: 16,
+  borderRadius: 0,
   backgroundColor: '#ffffff',
 }
 

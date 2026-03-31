@@ -16,7 +16,6 @@ export function useMicrositeWorkflow() {
   const editorRef = useRef(null)
   const sdkRef = useRef(null)
   const launchedRef = useRef(false)
-  /** Trimmed pickup name from Start (or Finish); export filename adds timestamp. */
   const pickupBaseNameRef = useRef('')
 
   const [status, setStatus] = useState('loading')
@@ -25,7 +24,6 @@ export function useMicrositeWorkflow() {
   const [remaining, setRemaining] = useState(sessionSeconds)
   const [timerRunning, setTimerRunning] = useState(false)
   const [showNameModal, setShowNameModal] = useState(false)
-  /** 'start' = before Express; 'finish' = header Finish flow */
   const [nameModalMode, setNameModalMode] = useState('finish')
   const [nameInput, setNameInput] = useState('')
   const [uploadBusy, setUploadBusy] = useState(false)
@@ -212,8 +210,6 @@ export function useMicrositeWorkflow() {
       }
     }
 
-    // iPad Safari requires the editor create call to stay in the same user-activation
-    // chain as the Start tap; double rAF can break the embed iframe.
     runCreate()
   }, [status, resetForNextUser, sessionSeconds, showSessionTimer])
 
@@ -241,7 +237,7 @@ export function useMicrositeWorkflow() {
       setError(
         nameModalMode === 'start'
           ? 'Please enter the name you will use when you pickup the item.'
-          : 'Please enter your name.'
+          : 'Please enter your pickup name.'
       )
       return
     }
@@ -281,11 +277,11 @@ export function useMicrositeWorkflow() {
     remaining,
     banner,
     showNameModal,
+    nameModalMode,
     nameInput,
     setNameInput,
     uploadBusy,
     openStartPickupModal,
-    nameModalMode,
     showLeaveConfirm,
     openLeaveConfirm,
     cancelLeaveConfirm,

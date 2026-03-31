@@ -1,18 +1,18 @@
 export function FileNameModal({ variant = 'finish', value, onChange, onConfirm, onCancel }) {
   const isStart = variant === 'start'
-  const title = isStart ? 'Pickup name' : 'Your name'
+  const title = isStart ? 'Before you start' : 'Finish & export'
   const hintLead = isStart
     ? 'Please enter the name you will use when you pickup the item.'
-    : 'This should match the name you are using for pickup.'
+    : 'Confirm or update your pickup name.'
   const hintMuted = isStart
-    ? 'Your file will be saved as this name plus the date and time (so each export is unique). Then use Export & upload in Adobe Express.'
-    : 'Then use Export & upload in Adobe Express.'
-  const placeholder = isStart ? 'Pickup name' : 'Your name'
+    ? 'We will save your design under this name plus the date and time when you tap Export & upload in Express (each save gets a unique file name).'
+    : 'The same rule applies: your file will be saved as this name plus the date and time when you export (so every upload is unique).'
+  const placeholder = isStart ? 'Pickup name' : 'Pickup name'
 
   return (
-    <div className="modalRoot" role="dialog" aria-modal="true" aria-labelledby="fn-title">
+    <div className="modalRoot modalRoot--pickup" role="dialog" aria-modal="true" aria-labelledby="fn-title">
       <button type="button" className="modalRoot__scrim" aria-label="Close" onClick={onCancel} />
-      <div className="modalCard">
+      <div className="modalCard modalCard--pickup">
         <h2 id="fn-title" className="modalCard__title">
           {title}
         </h2>
@@ -20,7 +20,7 @@ export function FileNameModal({ variant = 'finish', value, onChange, onConfirm, 
         <p className="modalCard__hint modalCard__hint--muted">{hintMuted}</p>
         <input
           id="file-name-input"
-          className="modalCard__input"
+          className="modalCard__input modalCard__input--pickup"
           type="text"
           inputMode="text"
           autoComplete="name"
@@ -33,7 +33,7 @@ export function FileNameModal({ variant = 'finish', value, onChange, onConfirm, 
           }}
         />
         <div className="modalCard__row">
-          <button type="button" className="btn btn--ghost" onClick={onCancel}>
+          <button type="button" className="btn btn--ghost btn--pickupGhost" onClick={onCancel}>
             Cancel
           </button>
           <button type="button" className="btn btn--primary" onClick={onConfirm}>
