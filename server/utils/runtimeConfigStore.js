@@ -9,6 +9,8 @@ const EMPTY = {
   sessionSeconds: null,
   sitePasswordEnabled: null,
   siteAccessPassword: null,
+  adminPasswordEnabled: null,
+  adminAccessPassword: null,
 }
 
 function normalize(raw) {
@@ -23,6 +25,10 @@ function normalize(raw) {
     else out.sitePasswordEnabled = Boolean(raw.sitePasswordEnabled)
     if (raw.siteAccessPassword == null) out.siteAccessPassword = null
     else out.siteAccessPassword = String(raw.siteAccessPassword)
+    if (raw.adminPasswordEnabled == null) out.adminPasswordEnabled = null
+    else out.adminPasswordEnabled = Boolean(raw.adminPasswordEnabled)
+    if (raw.adminAccessPassword == null) out.adminAccessPassword = null
+    else out.adminAccessPassword = String(raw.adminAccessPassword)
   }
   return out
 }

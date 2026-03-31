@@ -1,5 +1,6 @@
 import './App.css'
 import { useState } from 'react'
+import { AdminPasswordGate } from './components/microsite/AdminPasswordGate.jsx'
 import { AdminPanel } from './components/microsite/AdminPanel.jsx'
 import { ExpressEditorHost } from './components/microsite/ExpressEditorHost.jsx'
 import { ErrorBanner } from './components/microsite/ErrorBanner.jsx'
@@ -32,6 +33,9 @@ export default function App() {
   }
 
   if (isAdminPath) {
+    if (rt.adminPasswordRequired && !rt.adminAuthOk) {
+      return <AdminPasswordGate />
+    }
     return <AdminPanel />
   }
 

@@ -47,6 +47,25 @@ export function getSitePasswordConfig() {
   return { enabled, required, password }
 }
 
+export function getAdminPasswordConfig() {
+  const overrides = readRuntimeConfigOverrides()
+  const enabled = ['true', '1', 'yes', 'on'].includes(
+    String(
+      overrides.adminPasswordEnabled != null
+        ? overrides.adminPasswordEnabled
+        : process.env.ADMIN_PASSWORD_ENABLED || ''
+    )
+      .trim()
+      .toLowerCase()
+  )
+  const password =
+    overrides.adminAccessPassword != null
+      ? overrides.adminAccessPassword
+      : (process.env.ADMIN_ACCESS_PASSWORD ?? '')
+  const required = enabled && password.length > 0
+  return { enabled, required, password }
+}
+
 export function getAuthCookieSecret() {
   return (
     process.env.SITE_AUTH_SECRET?.trim() ||

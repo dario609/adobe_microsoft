@@ -462,15 +462,21 @@
   background: transparent;
 }
 
+/* Satellite-style double ring (inner fill + gap + outer ring) */
 .landGallery__pick--active .landGallery__img {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+  border-color: transparent;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 4px #22c55e,
+    0 0 0 7px #ffffff,
+    0 0 0 9px #22c55e;
 }
 
 .landGallery__caption {
   font-size: 0.8125rem;
-  line-height: 1.3;
-  color: var(--text-h);
+  line-height: 1.35;
+  font-weight: 500;
+  color: #0f172a;
   word-break: break-word;
   max-width: 140px;
 }
@@ -546,14 +552,59 @@
 /* ——— Admin panel ——— */
 .adminRoot {
   min-height: 100svh;
-  width: 100%;
-  max-width: 1100px;
+  width: 80%;
+  max-width: none;
   margin: 0 auto;
   padding: 20px max(16px, env(safe-area-inset-right)) 28px max(16px, env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
   gap: 14px;
   box-sizing: border-box;
+}
+
+@media (max-width: 1100px) {
+  .adminRoot {
+    width: min(100%, 92vw);
+  }
+}
+
+.adminMainRow {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 18px;
+  width: 100%;
+  min-width: 0;
+}
+
+.adminMainRow__gallery {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.adminMainRow__settings {
+  flex: 0 0 min(360px, 38%);
+  min-width: 260px;
+  position: sticky;
+  top: 16px;
+  align-self: flex-start;
+}
+
+@media (max-width: 960px) {
+  .adminMainRow {
+    flex-direction: column;
+  }
+
+  .adminMainRow__settings {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    position: static;
+  }
+}
+
+.adminCard--headerOnly {
+  padding-bottom: 18px;
 }
 
 .adminCard {
@@ -1017,10 +1068,45 @@
   font-size: 0.875rem;
 }
 
+.adminSettings__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .adminSettings__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 12px;
+}
+
+.adminSettings__cardTitle {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.adminSettings__hint {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.adminSettings__code {
+  font-family: ui-monospace, system-ui, monospace;
+  font-size: 0.85em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #f1f5f9;
+}
+
+.adminSettings__btnRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .adminSettings__card {
@@ -1187,7 +1273,7 @@
   background: color-mix(in srgb, var(--text-h) 4%, var(--bg));
 }
 
-/* ——— Editor: themed frame inside centered boundary (not full viewport width) ——— */
+/* ——— Editor: flat host — no rainbow frame; design shows as in Express ——— */
 .editorShell {
   flex: 1 1 auto;
   min-height: min(720px, 78dvh);
@@ -1196,7 +1282,6 @@
   margin-inline: auto;
   display: flex;
   flex-direction: column;
-  /* Bottom padding reserves visible gap under the rainbow frame (shell background) */
   padding: 8px 0 var(--editor-shell-below);
   box-sizing: border-box;
 }
@@ -1213,47 +1298,25 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: var(--editor-rainbow-border);
-  border-radius: var(--editor-frame-outer-radius);
-  background: linear-gradient(
-    135deg,
-    #fbbf24,
-    #f97316,
-    #ec4899,
-    #a855f7,
-    #3b82f6,
-    #22c55e
-  );
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .editorStage__frameInner {
   flex: 1 1 auto;
   min-height: 0;
   position: relative;
-  /* Grid + minmax(0,1fr): definite height for the host (avoids min-height:auto “content” gap under iframe) */
   display: grid;
   grid-template: minmax(0, 1fr) / minmax(0, 1fr);
-  border-radius: calc(var(--editor-frame-outer-radius) - var(--editor-rainbow-border));
-  background: #f3f4f6;
+  border-radius: 0;
+  background: transparent;
   overflow: hidden;
 }
 
-/* Branding PNG over Express (top center); pointer-events none so the embed stays usable */
 .editorStage__frameInner::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 30;
-  width: min(90%, var(--editor-brand-image-max-width));
-  height: var(--editor-brand-image-height);
-  background-image: var(--editor-brand-image);
-  background-repeat: no-repeat;
-  background-position: top center;
-  background-size: contain;
-  pointer-events: none;
+  display: none;
 }
 
 .editorStage__frameInner > * {
@@ -1267,7 +1330,7 @@
   box-sizing: border-box;
   border-radius: 0;
   border: none;
-  background: #f3f4f6;
+  background: transparent;
   overflow: hidden;
 }
 
@@ -1291,7 +1354,7 @@
   overflow: hidden;
   visibility: visible;
   pointer-events: auto;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
 }
 
 /*
@@ -1398,9 +1461,8 @@
   }
 }
 
-/* Editing shell forces light tokens; keep host tint aligned with Express chrome */
 .appRoot--editing .microsite__editor--visible {
-  background: #f3f4f6;
+  background: transparent;
 }
 
 /* ——— Busy overlay ——— */
