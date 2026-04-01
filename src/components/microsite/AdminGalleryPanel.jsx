@@ -152,6 +152,11 @@ export function AdminGalleryPanel() {
     const files = Array.from(e.target.files || [])
     e.target.value = ''
     if (!files.length) return
+    const tid = uploadTemplateId.trim()
+    if (!tid) {
+      setActionError('Enter the template ID above before uploading — it is required for every image.')
+      return
+    }
     setActionError('')
     setBusy(true)
     try {
@@ -306,14 +311,14 @@ export function AdminGalleryPanel() {
           </label>
           <div className="adminGallery__field">
             <label className="adminGallery__fieldLabel" htmlFor="upload-template-id">
-              Template ID (optional)
+              Template ID (required)
             </label>
             <div className="adminGallery__fieldRow">
               <input
                 id="upload-template-id"
                 className="adminGallery__textInput adminGallery__textInput--template"
                 type="text"
-                placeholder="Applied to uploads below"
+                placeholder="Adobe template URN for these uploads"
                 value={uploadTemplateId}
                 onChange={(e) => setUploadTemplateId(e.target.value)}
                 disabled={busy}
@@ -383,7 +388,7 @@ export function AdminGalleryPanel() {
                   fe.templateId ? ' adminGallery__textInput--invalid' : ''
                 }`}
                 type="text"
-                placeholder="Optional"
+                placeholder="Required — Adobe template URN"
                 value={d.templateId}
                 onChange={(e) => {
                   setDraft(it.id, { templateId: e.target.value })

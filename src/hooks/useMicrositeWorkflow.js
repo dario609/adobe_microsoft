@@ -8,7 +8,7 @@ import { tryAutomatePublishExport } from '../adobe/tryAutomatePublishExport.js'
 import { FINISH_AFTER_NAME_BANNER } from '../constants/flow.js'
 import { blobFromAdobeExport, getPublishAssetPayload } from '../utils/adobeAsset.js'
 import { friendlyExportFailure } from '../utils/uploadErrors.js'
-import { clearGalleryPick, getGalleryTemplateId } from '../constants/gallerySelection.js'
+import { clearGalleryPick, getGalleryPickId, getGalleryTemplateId } from '../constants/gallerySelection.js'
 import { buildPickupExportFilename } from '../utils/uploadFilename.js'
 
 export function useMicrositeWorkflow() {
@@ -143,7 +143,12 @@ export function useMicrositeWorkflow() {
     const editor = editorRef.current
     if (!editor || launchedRef.current || status !== 'ready') return
 
+    const galleryPick = getGalleryPickId().trim()
     const galleryTemplate = getGalleryTemplateId().trim()
+    if (!galleryPick || !galleryTemplate) {
+      setError('Choose a template on the gallery before starting.')
+      return
+    }
     if (REQUIRE_ADOBE_TEMPLATE && !ADOBE_TEMPLATE_ID && !galleryTemplate) {
       setError('Choose a gallery image that has a template ID, or set VITE_ADOBE_TEMPLATE_ID in .env.')
       return
@@ -222,7 +227,12 @@ export function useMicrositeWorkflow() {
 
   const openStartPickupModal = useCallback(() => {
     if (status !== 'ready' || launchedRef.current) return
+    const galleryPick = getGalleryPickId().trim()
     const galleryTemplate = getGalleryTemplateId().trim()
+    if (!galleryPick || !galleryTemplate) {
+      setError('Choose a template from the gallery before starting.')
+      return
+    }
     if (REQUIRE_ADOBE_TEMPLATE && !ADOBE_TEMPLATE_ID && !galleryTemplate) {
       setError('Choose a gallery image that has a template ID, or set VITE_ADOBE_TEMPLATE_ID in .env.')
       return
@@ -272,9 +282,14 @@ export function useMicrositeWorkflow() {
     setShowNameModal(false)
   }, [])
 
+  const galleryPick = typeof window !== 'undefined' ? getGalleryPickId().trim() : ''
   const galleryTemplate = typeof window !== 'undefined' ? getGalleryTemplateId().trim() : ''
   const templateConfigured = Boolean(ADOBE_TEMPLATE_ID) || Boolean(galleryTemplate)
-  const canStart = status === 'ready' && (!REQUIRE_ADOBE_TEMPLATE || templateConfigured)
+  const hasLandingTemplateChoice = Boolean(galleryPick) && Boolean(galleryTemplate)
+  const canStart =
+    status === 'ready' &&
+    hasLandingTemplateChoice &&
+    (!REQUIRE_ADOBE_TEMPLATE || templateConfigured)
 
   return {
     brandName: BRAND_NAME,

@@ -104,6 +104,11 @@ export async function addGalleryPng(buffer, meta) {
   if (!p) throw new Error('Invalid id')
   const originalName = displayKey(meta.originalName ?? 'image.png')
   const templateId = normalizeTemplateId(meta.templateId)
+  if (!templateId) {
+    const err = new Error('Template ID is required.')
+    err.code = 'GALLERY_VALIDATION'
+    throw err
+  }
   const items = await readManifest()
   const conflict = findGalleryConflict(items, null, originalName, templateId)
   if (conflict) {
@@ -153,8 +158,22 @@ export async function updateGalleryItem(id, patch) {
   if (idx < 0) return null
   const cur = items[idx]
   const next = { ...cur }
-  if (patch.templateId !== undefined) next.templateId = normalizeTemplateId(patch.templateId)
+  if (patch.templateId !== undefined) {
+    const tid = normalizeTemplateId(patch.templateId)
+    if (!tid) {
+      const err = new Error('Template ID is required.')
+      err.code = 'GALLERY_VALIDATION'
+      throw err
+    }
+    next.templateId = tid
+  }
   if (patch.originalName !== undefined) next.originalName = displayKey(patch.originalName)
+  const effectiveTid = normalizeTemplateId(next.templateId)
+  if (!effectiveTid) {
+    const err = new Error('Template ID is required.')
+    err.code = 'GALLERY_VALIDATION'
+    throw err
+  }
   const conflict = findGalleryConflict(items, id, displayKey(next.originalName), next.templateId)
   if (conflict) {
     const err = new Error(conflict.message)
@@ -172,6 +191,11 @@ export async function replaceGalleryPng(id, buffer) {
   const idx = items.findIndex((x) => x.id === id)
   if (idx < 0) return null
   const cur = items[idx]
+  if (!normalizeTemplateId(cur.templateId)) {
+    const err = new Error('Template ID is required for this item before replacing the image.')
+    err.code = 'GALLERY_VALIDATION'
+    throw err
+  }
   const oldExt = normalizeStoredExt(cur.fileExt)
   const { contentImageMime } = getPublicContentSettings()
   const newExt = contentImageMeta(contentImageMime).ext

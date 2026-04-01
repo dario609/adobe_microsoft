@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { createAdminRouter } from './admin.js'
 import { createBannerRouter } from './banner.js'
+import { createBrandingRouter } from './branding.js'
 import { createGalleryRouter } from './gallery.js'
 import { createHealthRouter } from './health.js'
 import { createDropboxOauthRouter } from './oauth.js'
@@ -13,6 +14,7 @@ export function createApiRouter() {
 
   api.use(createHealthRouter())
   api.use(createGalleryRouter())
+  api.use(createBrandingRouter())
   api.use(createAdminRouter())
   api.use(createPublicConfigRouter())
   api.use(createSiteAuthRouter())

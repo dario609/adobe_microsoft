@@ -513,8 +513,8 @@
 }
 
 .sessionHeader__logo {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   object-fit: contain;
   border-radius: 10px;
   flex-shrink: 0;
@@ -581,7 +581,7 @@
 
 .adminMainRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 380px);
+  grid-template-columns: minmax(0, 1fr) minmax(300px, min(46%, 520px));
   gap: 18px;
   align-items: start;
   width: 100%;
@@ -861,7 +861,8 @@
 }
 
 .adminGallery__fieldRow .adminGallery__textInput {
-  flex: 1 1 160px;
+  flex: 0 1 240px;
+  max-width: 260px;
   min-width: 0;
 }
 
@@ -893,8 +894,9 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: min(100%, 220px);
-  flex: 1 1 200px;
+  min-width: min(100%, 180px);
+  flex: 0 1 280px;
+  max-width: 320px;
 }
 
 .adminGallery__fieldLabel {
@@ -1179,6 +1181,13 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.875rem;
   letter-spacing: 0.02em;
+}
+
+.adminSettings__logoRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
 }
 
 .adminSettings__hint {

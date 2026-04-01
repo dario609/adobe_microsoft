@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { apiFetch } from '../../api/apiFetch.js'
 import { useRuntimeConfig } from '../../hooks/useRuntimeConfig.js'
+import { ExperienceLogoImg } from './ExperienceLogoImg.jsx'
 
 async function parseResponse(res) {
   const ct = res.headers.get('content-type') || ''
@@ -32,7 +33,7 @@ const CONTENT_IMAGE_OPTIONS = [
 ]
 
 export function AdminSettingsPanel() {
-  const { reloadConfig } = useRuntimeConfig()
+  const { reloadConfig, contentImageAccept } = useRuntimeConfig()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [sessionSeconds, setSessionSeconds] = useState(0)
@@ -47,6 +48,8 @@ export function AdminSettingsPanel() {
   const [unsupported, setUnsupported] = useState(false)
   const [contentImageMime, setContentImageMime] = useState('image/png')
   const [thankYouDraft, setThankYouDraft] = useState('')
+  const [logoBusy, setLogoBusy] = useState(false)
+  const [logoKey, setLogoKey] = useState(0)
 
   useEffect(() => {
     ;(async () => {
@@ -70,6 +73,17 @@ export function AdminSettingsPanel() {
         if (typeof data?.submissionThankYouMessage === 'string') {
           setThankYouDraft(data.submissionThankYouMessage)
         }
+        try {
+          const opRes = await apiFetch('/api/admin/operator-fields', { cache: 'no-store' })
+          if (opRes.ok) {
+            const od = await parseResponse(opRes)
+            if (typeof od?.adminAccessPassword === 'string' && od.adminAccessPassword) {
+              setAdminPasswordInput(od.adminAccessPassword)
+            }
+          }
+        } catch {
+          /* ignore — not signed in or older API */
+        }
       } catch (e) {
         setErr(e?.message || 'Could not load settings.')
       } finally {
@@ -77,6 +91,48 @@ export function AdminSettingsPanel() {
       }
     })()
   }, [])
+
+  const uploadExperienceLogo = async (e) => {
+    const f = e.target.files?.[0]
+    e.target.value = ''
+    if (!f) return
+    setErr('')
+    setMsg('')
+    setLogoBusy(true)
+    try {
+      const fd = new FormData()
+      fd.append('logo', f)
+      const res = await apiFetch('/api/admin/experience-logo', { method: 'POST', body: fd })
+      const data = await parseResponse(res)
+      if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : 'Could not upload logo.')
+      setMsg('Experience logo updated.')
+      setLogoKey((x) => x + 1)
+      await reloadConfig()
+    } catch (er) {
+      setErr(er?.message || 'Could not upload logo.')
+    } finally {
+      setLogoBusy(false)
+    }
+  }
+
+  const clearExperienceLogo = async () => {
+    if (!window.confirm('Remove the custom experience logo and fall back to the default asset?')) return
+    setErr('')
+    setMsg('')
+    setLogoBusy(true)
+    try {
+      const res = await apiFetch('/api/admin/experience-logo', { method: 'DELETE' })
+      const data = await parseResponse(res)
+      if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : 'Could not remove logo.')
+      setMsg('Experience logo removed.')
+      setLogoKey((x) => x + 1)
+      await reloadConfig()
+    } catch (er) {
+      setErr(er?.message || 'Could not remove logo.')
+    } finally {
+      setLogoBusy(false)
+    }
+  }
 
   const saveTimer = async (e) => {
     e.preventDefault()
@@ -277,6 +333,40 @@ export function AdminSettingsPanel() {
       {msg ? <p className="adminSettings__ok">{msg}</p> : null}
 
       <div className="adminSettings__stack">
+        <div className="adminSettings__card">
+          <div className="adminSettings__cardHead">
+            <span className="adminSettings__badge adminSettings__badge--site">Brand</span>
+            <p className="adminSettings__cardTitle">Experience logo</p>
+          </div>
+          <p className="adminSettings__hint">
+            Appears on the template picker and beside the guest&apos;s design in the Express header. Format matches
+            your Content settings (PNG, JPEG, or WebP).
+          </p>
+          <div className="adminSettings__logoRow">
+            <ExperienceLogoImg key={logoKey} className="landHeader__logo" width={56} height={56} />
+          </div>
+          <div className="adminSettings__btnRow">
+            <label className="btn btn--adminGradient btn--small">
+              {logoBusy ? 'Working…' : 'Upload logo'}
+              <input
+                type="file"
+                className="adminGallery__fileInput"
+                accept={contentImageAccept}
+                disabled={logoBusy || loading}
+                onChange={uploadExperienceLogo}
+              />
+            </label>
+            <button
+              type="button"
+              className="btn btn--adminSoft btn--small"
+              disabled={logoBusy || loading}
+              onClick={clearExperienceLogo}
+            >
+              Remove logo
+            </button>
+          </div>
+        </div>
+
         <form className="adminSettings__card" onSubmit={saveContentSettings}>
           <div className="adminSettings__cardHead">
             <span className="adminSettings__badge adminSettings__badge--site">Content</span>

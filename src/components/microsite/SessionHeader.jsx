@@ -1,4 +1,5 @@
 import { formatClock } from '../../utils/time.js'
+import { ExperienceLogoImg } from './ExperienceLogoImg.jsx'
 import { HeaderBanner } from './HeaderBanner.jsx'
 
 export function SessionHeader({
@@ -14,6 +15,7 @@ export function SessionHeader({
   return (
     <header className="sessionHeader" role="banner">
       <div className="sessionHeader__brandRow">
+        <ExperienceLogoImg className="sessionHeader__logo" width={44} height={44} />
         <HeaderBanner cacheKey={bannerCacheKey} />
       </div>
       <div className="sessionHeader__actions">

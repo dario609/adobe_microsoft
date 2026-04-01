@@ -24,11 +24,11 @@ export function LandingHero({
         </button>
       </div>
       <p
-        className={`landHero__status${status === 'ready' ? ' landHero__status--center' : ''}`}
+        className={`landHero__status${status === 'ready' || status === 'loading' ? ' landHero__status--center' : ''}`}
         aria-live="polite"
       >
         {status === 'loading' && <span>Connecting to Adobe Express…</span>}
-        {status === 'ready' && <span>Choose a template and press Start.</span>}
+        {status === 'ready' && <span>Choose a template and press start.</span>}
         {status === 'error' && (
           <span>
             Could not load Adobe. Check <code>VITE_ADOBE_CLIENT_ID</code> and that this site URL is allowed in your Adobe project.

@@ -68,6 +68,12 @@ export function createGalleryRouter() {
         return res.status(400).json({ error: 'No image files uploaded (use field name "images").' })
       }
       const templateId = normalizeTemplateId(req.body?.templateId)
+      if (!templateId) {
+        return res.status(400).json({
+          error: 'Template ID is required for gallery uploads.',
+          code: 'TEMPLATE_ID_REQUIRED',
+        })
+      }
       const added = []
       try {
         for (const f of files) {
@@ -84,6 +90,9 @@ export function createGalleryRouter() {
       } catch (e) {
         if (e?.code === 'GALLERY_CONFLICT') {
           return res.status(409).json({ error: e.message, field: e.field })
+        }
+        if (e?.code === 'GALLERY_VALIDATION') {
+          return res.status(400).json({ error: e.message, code: e.code })
         }
         console.error('gallery upload:', e)
         return res.status(500).json({ error: 'Could not save gallery images.' })
@@ -103,6 +112,9 @@ export function createGalleryRouter() {
     } catch (e) {
       if (e?.code === 'GALLERY_CONFLICT') {
         return res.status(409).json({ error: e.message, field: e.field })
+      }
+      if (e?.code === 'GALLERY_VALIDATION') {
+        return res.status(400).json({ error: e.message, code: e.code })
       }
       console.error('gallery meta update:', e)
       return res.status(500).json({ error: 'Could not update gallery item.' })
@@ -128,6 +140,9 @@ export function createGalleryRouter() {
         if (!updated) return res.status(404).json({ error: 'Not found.' })
         return res.json({ ok: true, item: mapItem(updated) })
       } catch (e) {
+        if (e?.code === 'GALLERY_VALIDATION') {
+          return res.status(400).json({ error: e.message, code: e.code })
+        }
         console.error('gallery replace:', e)
         return res.status(500).json({ error: 'Could not replace image.' })
       }

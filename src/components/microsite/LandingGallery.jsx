@@ -52,7 +52,7 @@ export function LandingGallery({ onSelectionChange }) {
       {error ? <p className="landGallery__error">{error}</p> : null}
       {loading ? <p className="landGallery__muted">Loading images…</p> : null}
       {!loading && items.length === 0 ? (
-        <p className="landGallery__muted">No images yet. Ask an operator to upload PNGs in the admin panel.</p>
+        <p className="landGallery__muted">No templates yet. Ask an operator to upload images in the admin panel.</p>
       ) : null}
       {!loading && items.length > 0 ? (
         <ul className="landGallery__list" role="list">

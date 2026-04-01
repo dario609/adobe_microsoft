@@ -20,6 +20,9 @@ export function validateGalleryDraftLocal(id, items, draft) {
   const tid = galleryTemplateKey(draft.templateId)
   /** @type {Record<string, string>} */
   const errors = {}
+  if (!tid) {
+    errors.templateId = 'Template ID is required.'
+  }
   for (const x of items) {
     if (x.id === id) continue
     if (!errors.originalName && galleryDisplayKey(x.originalName) === display) {
