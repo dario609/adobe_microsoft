@@ -11,6 +11,8 @@ const EMPTY = {
   siteAccessPassword: null,
   adminPasswordEnabled: null,
   adminAccessPassword: null,
+  contentImageMime: null,
+  submissionThankYouMessage: null,
 }
 
 function normalize(raw) {
@@ -29,6 +31,10 @@ function normalize(raw) {
     else out.adminPasswordEnabled = Boolean(raw.adminPasswordEnabled)
     if (raw.adminAccessPassword == null) out.adminAccessPassword = null
     else out.adminAccessPassword = String(raw.adminAccessPassword)
+    if (raw.contentImageMime == null) out.contentImageMime = null
+    else out.contentImageMime = String(raw.contentImageMime).trim() || null
+    if (raw.submissionThankYouMessage == null) out.submissionThankYouMessage = null
+    else out.submissionThankYouMessage = String(raw.submissionThankYouMessage).slice(0, 2000)
   }
   return out
 }

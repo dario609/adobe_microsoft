@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { ADOBE_EXPLORE_TEMPLATES_URL } from '../../constants/config.js'
 import { apiFetch } from '../../api/apiFetch.js'
 import { apiUrl } from '../../api/apiBase.js'
+import { useRuntimeConfig } from '../../hooks/useRuntimeConfig.js'
 import { validateGalleryDraftLocal } from '../../utils/galleryDisplay.js'
 
 async function parseJson(res) {
@@ -45,6 +46,7 @@ function apiFailureMessage(res, data, op = 'load') {
 }
 
 export function AdminGalleryPanel() {
+  const { contentImageAccept, contentImageLabel } = useRuntimeConfig()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -115,7 +117,7 @@ export function AdminGalleryPanel() {
     return apiFailureMessage(res, data, 'upload') || `Upload failed (${res.status}).`
   }
 
-  /** Upload one PNG; optional template ID applies to this upload. */
+  /** Upload one image (type set in Session settings); optional template ID applies to this upload. */
   const uploadOne = async (file) => {
     const fd = new FormData()
     fd.append('images', file)
@@ -292,11 +294,11 @@ export function AdminGalleryPanel() {
       <div className="adminGallery__toolbar">
         <div className="adminGallery__toolbarRow">
           <label className="btn btn--adminGradient btn--small adminGallery__fileLabel">
-            {busy ? 'Working…' : 'Upload PNGs'}
+            {busy ? 'Working…' : `Upload ${contentImageLabel} images`}
             <input
               className="adminGallery__fileInput"
               type="file"
-              accept="image/png"
+              accept={contentImageAccept}
               multiple
               disabled={busy}
               onChange={onFiles}
@@ -341,7 +343,7 @@ export function AdminGalleryPanel() {
       {loading ? <p className="adminGallery__loading">Loading gallery…</p> : null}
       <ul className="adminGallery__grid" role="list">
         {!loading && items.length === 0 ? (
-          <li className="adminGallery__empty">No PNGs uploaded yet.</li>
+          <li className="adminGallery__empty">No images uploaded yet.</li>
         ) : null}
         {items.map((it) => {
           const d = draftById[it.id] || { templateId: '', originalName: it.originalName || '' }
@@ -397,11 +399,11 @@ export function AdminGalleryPanel() {
                 </p>
               ) : null}
               <label className="btn btn--adminSoft btn--small adminGallery__fileLabel adminGallery__replacePng">
-                Replace PNG
+                Replace image
                 <input
                   className="adminGallery__fileInput"
                   type="file"
-                  accept="image/png"
+                  accept={contentImageAccept}
                   disabled={busy}
                   onChange={(e) => {
                     const f = e.target.files?.[0]

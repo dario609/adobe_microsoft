@@ -25,6 +25,12 @@ function isMissingSettingsRoute(raw) {
   )
 }
 
+const CONTENT_IMAGE_OPTIONS = [
+  { value: 'image/png', label: 'PNG' },
+  { value: 'image/jpeg', label: 'JPEG' },
+  { value: 'image/webp', label: 'WebP' },
+]
+
 export function AdminSettingsPanel() {
   const { reloadConfig } = useRuntimeConfig()
   const [loading, setLoading] = useState(true)
@@ -39,6 +45,8 @@ export function AdminSettingsPanel() {
   const [msg, setMsg] = useState('')
   const [err, setErr] = useState('')
   const [unsupported, setUnsupported] = useState(false)
+  const [contentImageMime, setContentImageMime] = useState('image/png')
+  const [thankYouDraft, setThankYouDraft] = useState('')
 
   useEffect(() => {
     ;(async () => {
@@ -58,6 +66,10 @@ export function AdminSettingsPanel() {
         setSitePasswordSet(Boolean(data?.sitePasswordSet))
         setAdminPasswordEnabled(Boolean(data?.adminPasswordEnabled))
         setAdminPasswordSet(Boolean(data?.adminPasswordSet))
+        if (typeof data?.contentImageMime === 'string') setContentImageMime(data.contentImageMime)
+        if (typeof data?.submissionThankYouMessage === 'string') {
+          setThankYouDraft(data.submissionThankYouMessage)
+        }
       } catch (e) {
         setErr(e?.message || 'Could not load settings.')
       } finally {
@@ -191,6 +203,37 @@ export function AdminSettingsPanel() {
     }
   }
 
+  const saveContentSettings = async (e) => {
+    e.preventDefault()
+    setErr('')
+    setMsg('')
+    setSaving(true)
+    try {
+      const res = await apiFetch('/api/config/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contentImageMime,
+          submissionThankYouMessage: thankYouDraft,
+        }),
+      })
+      const data = await parseResponse(res)
+      if (!res.ok) {
+        throw new Error(toFriendlyError(res, data, 'Could not save content settings.'))
+      }
+      if (typeof data?.contentImageMime === 'string') setContentImageMime(data.contentImageMime)
+      if (typeof data?.submissionThankYouMessage === 'string') {
+        setThankYouDraft(data.submissionThankYouMessage)
+      }
+      setMsg('Gallery format and thank-you message updated.')
+      await reloadConfig()
+    } catch (err) {
+      setErr(err?.message || 'Could not save content settings.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const clearAdminPassword = async () => {
     if (!window.confirm('Remove the admin password and disable admin access protection?')) return
     setErr('')
@@ -226,12 +269,55 @@ export function AdminSettingsPanel() {
   return (
     <section className="adminCard adminCard--light adminSettings">
       <h2 className="adminCard__title adminCard__title--small">Session settings</h2>
-      <p className="adminCard__sub adminCard__sub--dark">Timer, visitor site gate, and operator admin access.</p>
+      <p className="adminCard__sub adminCard__sub--dark">
+        Timer, visitor site gate, gallery image type, guest thank-you message, and operator admin access.
+      </p>
       {loading ? <p className="adminGallery__loading">Loading settings…</p> : null}
       {err ? <p className="appError adminGallery__error">{err}</p> : null}
       {msg ? <p className="adminSettings__ok">{msg}</p> : null}
 
       <div className="adminSettings__stack">
+        <form className="adminSettings__card" onSubmit={saveContentSettings}>
+          <div className="adminSettings__cardHead">
+            <span className="adminSettings__badge adminSettings__badge--site">Content</span>
+            <p className="adminSettings__cardTitle">Gallery &amp; banner uploads</p>
+          </div>
+          <p className="adminSettings__hint">
+            Operators only see the selected image type in the file picker (server still enforces this type).
+          </p>
+          <label className="adminSettings__label" htmlFor="content-image-mime">
+            Allowed image format
+          </label>
+          <select
+            id="content-image-mime"
+            className="adminSettings__input"
+            value={contentImageMime}
+            onChange={(e) => setContentImageMime(e.target.value)}
+            disabled={saving || loading || unsupported}
+          >
+            {CONTENT_IMAGE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <label className="adminSettings__label" htmlFor="thank-you-message">
+            Message after successful submission
+          </label>
+          <textarea
+            id="thank-you-message"
+            className="adminSettings__input"
+            rows={4}
+            value={thankYouDraft}
+            onChange={(e) => setThankYouDraft(e.target.value)}
+            disabled={saving || loading || unsupported}
+            placeholder="Thank you for your submission…"
+          />
+          <button type="submit" className="btn btn--adminGradient btn--small" disabled={saving || loading || unsupported}>
+            Save content settings
+          </button>
+        </form>
+
         <form className="adminSettings__card" onSubmit={saveTimer}>
           <label className="adminSettings__label" htmlFor="session-seconds">
             Timer (seconds)

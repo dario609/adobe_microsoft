@@ -2,6 +2,8 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import crypto from 'node:crypto'
 import { projectRoot } from '../env.js'
+import { contentImageMeta } from './contentImageConfig.js'
+import { getPublicContentSettings } from './publicConfig.js'
 
 const GALLERY_DIR = path.join(projectRoot, 'server', 'uploads', 'gallery')
 const MANIFEST = path.join(GALLERY_DIR, 'manifest.json')
@@ -10,11 +12,23 @@ async function ensureDir() {
   await fs.mkdir(GALLERY_DIR, { recursive: true })
 }
 
+/** @param {string | undefined} ext */
+export function normalizeStoredExt(ext) {
+  const x = String(ext || 'png').toLowerCase()
+  if (x === 'jpeg' || x === 'jpg') return 'jpg'
+  if (x === 'webp') return 'webp'
+  return 'png'
+}
+
 async function readManifest() {
   try {
     const raw = await fs.readFile(MANIFEST, 'utf8')
     const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
+    if (!Array.isArray(parsed)) return []
+    return parsed.map((it) => ({
+      ...it,
+      fileExt: normalizeStoredExt(it.fileExt),
+    }))
   } catch {
     return []
   }
@@ -25,10 +39,20 @@ async function writeManifest(items) {
   await fs.writeFile(MANIFEST, JSON.stringify(items, null, 2), 'utf8')
 }
 
-export function getGalleryFilePath(id) {
+/**
+ * @param {string} id
+ * @param {string} [ext]
+ */
+export function getGalleryBlobPath(id, ext = 'png') {
   const safe = String(id || '').replace(/[^a-zA-Z0-9_-]/g, '')
   if (!safe) return ''
-  return path.join(GALLERY_DIR, `${safe}.png`)
+  const e = normalizeStoredExt(ext)
+  return path.join(GALLERY_DIR, `${safe}.${e}`)
+}
+
+/** @deprecated use getGalleryBlobPath(id, ext) with manifest fileExt */
+export function getGalleryFilePath(id) {
+  return getGalleryBlobPath(id, 'png')
 }
 
 /** Adobe URNs can be long (e.g. brand templates with a path segment); do not truncate aggressively. */
@@ -74,7 +98,9 @@ export async function listGalleryItems() {
 export async function addGalleryPng(buffer, meta) {
   await ensureDir()
   const id = crypto.randomUUID()
-  const p = getGalleryFilePath(id)
+  const { contentImageMime } = getPublicContentSettings()
+  const ext = contentImageMeta(contentImageMime).ext
+  const p = getGalleryBlobPath(id, ext)
   if (!p) throw new Error('Invalid id')
   const originalName = displayKey(meta.originalName ?? 'image.png')
   const templateId = normalizeTemplateId(meta.templateId)
@@ -93,6 +119,7 @@ export async function addGalleryPng(buffer, meta) {
     bytes: meta.bytes,
     uploadedAt: new Date().toISOString(),
     templateId,
+    fileExt: ext,
   }
   items.unshift(entry)
   await writeManifest(items.slice(0, 500))
@@ -104,8 +131,10 @@ export async function deleteGalleryItem(id) {
   const next = items.filter((x) => x.id !== id)
   if (next.length === items.length) return false
   await writeManifest(next)
+  const removed = items.find((x) => x.id === id)
+  const ext = removed?.fileExt || 'png'
   try {
-    await fs.unlink(getGalleryFilePath(id))
+    await fs.unlink(getGalleryBlobPath(id, ext))
   } catch {
     /* noop */
   }
@@ -139,14 +168,35 @@ export async function updateGalleryItem(id, patch) {
 }
 
 export async function replaceGalleryPng(id, buffer) {
-  const p = getGalleryFilePath(id)
-  if (!p) throw new Error('Invalid id')
   const items = await readManifest()
   const idx = items.findIndex((x) => x.id === id)
   if (idx < 0) return null
+  const cur = items[idx]
+  const oldExt = normalizeStoredExt(cur.fileExt)
+  const { contentImageMime } = getPublicContentSettings()
+  const newExt = contentImageMeta(contentImageMime).ext
+  const oldPath = getGalleryBlobPath(id, oldExt)
+  const newPath = getGalleryBlobPath(id, newExt)
   await ensureDir()
-  await fs.writeFile(p, buffer)
-  const next = { ...items[idx], bytes: buffer.length, uploadedAt: new Date().toISOString() }
+  try {
+    await fs.unlink(oldPath)
+  } catch {
+    /* may already match new path */
+  }
+  if (newPath !== oldPath) {
+    try {
+      await fs.unlink(newPath)
+    } catch {
+      /* noop */
+    }
+  }
+  await fs.writeFile(newPath, buffer)
+  const next = {
+    ...cur,
+    bytes: buffer.length,
+    uploadedAt: new Date().toISOString(),
+    fileExt: newExt,
+  }
   items[idx] = next
   await writeManifest(items)
   return next

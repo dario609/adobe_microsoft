@@ -1,21 +1,20 @@
 import { Router } from 'express'
-import fs from 'node:fs'
 import { requireSiteGate } from '../middleware/requireSiteGate.js'
 import { uploadSessionBanner } from '../middleware/bannerUpload.js'
-import { bannerExists, deleteBanner, getBannerPath, writeBannerPng } from '../utils/bannerStore.js'
+import { bannerExists, deleteBanner, getResolvedBannerForRead, writeBannerPng } from '../utils/bannerStore.js'
 
 export function createBannerRouter() {
   const router = Router()
 
   // Admin endpoints (no password gate by request).
-  router.get('/banner-admin', (_req, res) => {
-    const p = getBannerPath()
-    if (!fs.existsSync(p)) {
+  router.get('/banner-admin', async (_req, res) => {
+    const r = await getResolvedBannerForRead()
+    if (!r) {
       return res.status(404).type('text').send('No banner uploaded.')
     }
     res.setHeader('Cache-Control', 'no-store')
-    res.type('png')
-    return res.sendFile(p)
+    res.type(r.mime)
+    return res.sendFile(r.path)
   })
 
   router.post('/banner-admin', (req, res) => {
@@ -43,14 +42,14 @@ export function createBannerRouter() {
     res.json({ ok: true })
   })
 
-  router.get('/banner', requireSiteGate, (_req, res) => {
-    const p = getBannerPath()
-    if (!fs.existsSync(p)) {
+  router.get('/banner', requireSiteGate, async (_req, res) => {
+    const r = await getResolvedBannerForRead()
+    if (!r) {
       return res.status(404).type('text').send('No banner uploaded.')
     }
     res.setHeader('Cache-Control', 'public, max-age=60')
-    res.type('png')
-    return res.sendFile(p, { maxAge: 60000 })
+    res.type(r.mime)
+    return res.sendFile(r.path, { maxAge: 60000 })
   })
 
   router.head('/banner', requireSiteGate, async (_req, res) => {

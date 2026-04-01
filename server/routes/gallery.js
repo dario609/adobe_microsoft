@@ -1,10 +1,12 @@
 import { Router } from 'express'
 import fs from 'node:fs'
 import { uploadGalleryPngs, uploadGalleryPngSingle } from '../middleware/galleryUpload.js'
+import { extToMimeType } from '../utils/contentImageConfig.js'
 import {
   addGalleryPng,
   deleteGalleryItem,
-  getGalleryFilePath,
+  getGalleryBlobPath,
+  getGalleryItem,
   listGalleryItems,
   normalizeTemplateId,
   replaceGalleryPng,
@@ -36,14 +38,24 @@ export function createGalleryRouter() {
     }
   })
 
-  router.get('/gallery/image/:id', (req, res) => {
-    const p = getGalleryFilePath(req.params.id)
-    if (!p || !fs.existsSync(p)) {
-      return res.status(404).type('text').send('Not found.')
+  router.get('/gallery/image/:id', async (req, res) => {
+    try {
+      const item = await getGalleryItem(req.params.id)
+      if (!item) {
+        return res.status(404).type('text').send('Not found.')
+      }
+      const ext = item.fileExt || 'png'
+      const p = getGalleryBlobPath(req.params.id, ext)
+      if (!p || !fs.existsSync(p)) {
+        return res.status(404).type('text').send('Not found.')
+      }
+      res.setHeader('Cache-Control', 'public, max-age=120')
+      res.type(extToMimeType(ext))
+      return res.sendFile(p)
+    } catch (e) {
+      console.error('gallery image:', e)
+      return res.status(500).type('text').send('Error.')
     }
-    res.setHeader('Cache-Control', 'public, max-age=120')
-    res.type('png')
-    return res.sendFile(p)
   })
 
   router.post('/gallery', (req, res) => {
@@ -53,7 +65,7 @@ export function createGalleryRouter() {
       }
       const files = req.files
       if (!Array.isArray(files) || files.length === 0) {
-        return res.status(400).json({ error: 'No PNG files uploaded (use field name "images").' })
+        return res.status(400).json({ error: 'No image files uploaded (use field name "images").' })
       }
       const templateId = normalizeTemplateId(req.body?.templateId)
       const added = []
@@ -109,7 +121,7 @@ export function createGalleryRouter() {
       }
       const buf = req.file?.buffer
       if (!buf?.length) {
-        return res.status(400).json({ error: 'No PNG file (field name "image").' })
+        return res.status(400).json({ error: 'No image file (field name "image").' })
       }
       try {
         const updated = await replaceGalleryPng(req.params.id, buf)

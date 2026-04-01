@@ -7,6 +7,7 @@ import { ErrorBanner } from './components/microsite/ErrorBanner.jsx'
 import { FileNameModal } from './components/microsite/FileNameModal.jsx'
 import { LandingHero } from './components/microsite/LandingHero.jsx'
 import { LeaveConfirmModal } from './components/microsite/LeaveConfirmModal.jsx'
+import { SubmissionThanksModal } from './components/microsite/SubmissionThanksModal.jsx'
 import { MicrositeHeader } from './components/microsite/MicrositeHeader.jsx'
 import { NoticeBanner } from './components/microsite/NoticeBanner.jsx'
 import { SessionHeader } from './components/microsite/SessionHeader.jsx'
@@ -89,6 +90,16 @@ function MicrositeRoutes() {
 
         {m.showLeaveConfirm ? (
           <LeaveConfirmModal onConfirm={m.confirmLeaveSession} onCancel={m.cancelLeaveConfirm} />
+        ) : null}
+
+        {m.showSubmissionThanks ? (
+          <SubmissionThanksModal
+            message={
+              m.submissionThankYouMessage?.trim() ||
+              'Thank you for your submission. Please see a brand ambassador for the current pickup wait time.'
+            }
+            onDismiss={m.dismissSubmissionThanks}
+          />
         ) : null}
 
         {m.showNameModal ? (

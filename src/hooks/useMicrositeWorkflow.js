@@ -12,7 +12,7 @@ import { clearGalleryPick, getGalleryTemplateId } from '../constants/gallerySele
 import { buildPickupExportFilename } from '../utils/uploadFilename.js'
 
 export function useMicrositeWorkflow() {
-  const { sessionSeconds, showSessionTimer } = useRuntimeConfig()
+  const { sessionSeconds, showSessionTimer, submissionThankYouMessage } = useRuntimeConfig()
   const editorRef = useRef(null)
   const sdkRef = useRef(null)
   const launchedRef = useRef(false)
@@ -29,6 +29,7 @@ export function useMicrositeWorkflow() {
   const [uploadBusy, setUploadBusy] = useState(false)
   const [banner, setBanner] = useState('')
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+  const [showSubmissionThanks, setShowSubmissionThanks] = useState(false)
 
   useEffect(() => {
     setRemaining(sessionSeconds)
@@ -37,6 +38,7 @@ export function useMicrositeWorkflow() {
   const resetForNextUser = useCallback(async () => {
     clearGalleryPick()
     setShowLeaveConfirm(false)
+    setShowSubmissionThanks(false)
     setError('')
     setBanner('')
     setTimerRunning(false)
@@ -69,6 +71,12 @@ export function useMicrositeWorkflow() {
 
   const confirmLeaveSession = useCallback(async () => {
     setShowLeaveConfirm(false)
+    await resetForNextUser()
+  }, [resetForNextUser])
+
+  const dismissSubmissionThanks = useCallback(async () => {
+    setShowSubmissionThanks(false)
+    setBanner('')
     await resetForNextUser()
   }, [resetForNextUser])
 
@@ -174,8 +182,7 @@ export function useMicrositeWorkflow() {
             try {
               const blob = await blobFromAdobeExport(payload)
               await uploadDesignToServer(blob, filename)
-              setBanner('Uploaded to Dropbox. Resetting for the next guest…')
-              await resetForNextUser()
+              setShowSubmissionThanks(true)
             } catch (e) {
               console.error('Publish/upload:', e, publishParams)
               setError(friendlyExportFailure(e?.message || String(e)))
@@ -293,5 +300,8 @@ export function useMicrositeWorkflow() {
     requireAdobeTemplate: REQUIRE_ADOBE_TEMPLATE,
     templateConfigured,
     showSessionTimer,
+    showSubmissionThanks,
+    submissionThankYouMessage,
+    dismissSubmissionThanks,
   }
 }

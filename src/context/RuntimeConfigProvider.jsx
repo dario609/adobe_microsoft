@@ -16,6 +16,10 @@ export function RuntimeConfigProvider({ children }) {
   const [siteAuthOk, setSiteAuthOk] = useState(false)
   const [adminPasswordRequired, setAdminPasswordRequired] = useState(false)
   const [adminAuthOk, setAdminAuthOk] = useState(false)
+  const [contentImageMime, setContentImageMime] = useState('image/png')
+  const [contentImageAccept, setContentImageAccept] = useState('.png,image/png')
+  const [contentImageLabel, setContentImageLabel] = useState('PNG')
+  const [submissionThankYouMessage, setSubmissionThankYouMessage] = useState('')
 
   const refreshAuth = useCallback(async () => {
     try {
@@ -69,6 +73,13 @@ export function RuntimeConfigProvider({ children }) {
       } else {
         await refreshAdminAuth()
       }
+
+      if (typeof cfg.contentImageMime === 'string') setContentImageMime(cfg.contentImageMime)
+      if (typeof cfg.contentImageAccept === 'string') setContentImageAccept(cfg.contentImageAccept)
+      if (typeof cfg.contentImageLabel === 'string') setContentImageLabel(cfg.contentImageLabel)
+      if (typeof cfg.submissionThankYouMessage === 'string') {
+        setSubmissionThankYouMessage(cfg.submissionThankYouMessage)
+      }
     } catch (e) {
       console.error('RuntimeConfig:', e)
       setSitePasswordRequired(false)
@@ -109,6 +120,13 @@ export function RuntimeConfigProvider({ children }) {
         setAdminAuthOk(true)
       } else {
         await refreshAdminAuth()
+      }
+
+      if (typeof cfg.contentImageMime === 'string') setContentImageMime(cfg.contentImageMime)
+      if (typeof cfg.contentImageAccept === 'string') setContentImageAccept(cfg.contentImageAccept)
+      if (typeof cfg.contentImageLabel === 'string') setContentImageLabel(cfg.contentImageLabel)
+      if (typeof cfg.submissionThankYouMessage === 'string') {
+        setSubmissionThankYouMessage(cfg.submissionThankYouMessage)
       }
     } catch (e) {
       console.error('reloadConfig:', e)
@@ -162,6 +180,10 @@ export function RuntimeConfigProvider({ children }) {
       refreshAuth,
       refreshAdminAuth,
       reloadConfig,
+      contentImageMime,
+      contentImageAccept,
+      contentImageLabel,
+      submissionThankYouMessage,
     }),
     [
       ready,
@@ -176,6 +198,10 @@ export function RuntimeConfigProvider({ children }) {
       refreshAuth,
       refreshAdminAuth,
       reloadConfig,
+      contentImageMime,
+      contentImageAccept,
+      contentImageLabel,
+      submissionThankYouMessage,
     ]
   )
 

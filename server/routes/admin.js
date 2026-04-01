@@ -1,19 +1,18 @@
 import { Router } from 'express'
-import fs from 'node:fs'
 import { uploadSessionBanner } from '../middleware/bannerUpload.js'
-import { deleteBanner, getBannerPath, writeBannerPng } from '../utils/bannerStore.js'
+import { deleteBanner, getResolvedBannerForRead, writeBannerPng } from '../utils/bannerStore.js'
 import { listUploadHistory } from '../utils/uploadHistory.js'
 
 export function createAdminRouter() {
   const router = Router()
 
   // Intentionally no site-password middleware for operator screen.
-  router.get('/admin/banner', (_req, res) => {
-    const p = getBannerPath()
-    if (!fs.existsSync(p)) return res.status(404).type('text').send('No banner uploaded.')
+  router.get('/admin/banner', async (_req, res) => {
+    const r = await getResolvedBannerForRead()
+    if (!r) return res.status(404).type('text').send('No banner uploaded.')
     res.setHeader('Cache-Control', 'no-store')
-    res.type('png')
-    return res.sendFile(p)
+    res.type(r.mime)
+    return res.sendFile(r.path)
   })
 
   router.post('/admin/banner', (req, res) => {
