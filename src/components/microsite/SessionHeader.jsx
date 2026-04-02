@@ -14,7 +14,7 @@ export function SessionHeader({
   return (
     <header className="sessionHeader" role="banner">
       <div className="sessionHeader__brandRow">
-        <ExperienceLogoImg className="sessionHeader__logo" width={44} height={44} />
+        <ExperienceLogoImg className="sessionHeader__logo" width={52} height={52} />
         <HeaderBanner cacheKey={bannerCacheKey} />
       </div>
       <div className="sessionHeader__actions">

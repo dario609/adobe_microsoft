@@ -510,7 +510,7 @@
   gap: 12px;
   flex-wrap: wrap;
   row-gap: 10px;
-  min-height: 52px;
+  min-height: 56px;
   width: 100%;
   max-width: var(--editor-boundary-max);
   margin-inline: auto;
@@ -524,10 +524,10 @@
 }
 
 .sessionHeader__logo {
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
   object-fit: contain;
-  border-radius: 10px;
+  border-radius: 12px;
   flex-shrink: 0;
 }
 
@@ -537,7 +537,7 @@
   gap: 10px;
   min-width: 0;
   flex: 1;
-  min-height: 40px;
+  min-height: 48px;
 }
 
 .sessionHeader__brand {
@@ -551,7 +551,7 @@
 
 .sessionHeader__heroImg {
   margin-left: 8px;
-  height: 40px;
+  height: 44px;
   width: auto;
   max-width: 180px;
   object-fit: contain;
@@ -568,7 +568,7 @@
   align-items: center;
   justify-content: center;
   min-width: 48px;
-  height: 40px;
+  height: 44px;
   padding: 0 10px;
   border-radius: 8px;
   font-size: 0.75rem;
