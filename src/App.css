@@ -341,10 +341,11 @@
 }
 
 .landHeader__logo {
-  width: 48px;
-  height: 48px;
+  width: min(10.5rem, 44vw);
+  height: auto;
+  max-height: min(7.5rem, 22vh);
   object-fit: contain;
-  border-radius: 12px;
+  border-radius: 14px;
   flex-shrink: 0;
 }
 
@@ -375,6 +376,12 @@
 
 .landHero__cta {
   margin-bottom: 8px;
+}
+
+/* Landing Start stays fully opaque (global .btn:disabled uses opacity: 0.5). */
+.landHero__cta .btn.btn--primary:disabled {
+  opacity: 1;
+  cursor: not-allowed;
 }
 
 .landHero__status {

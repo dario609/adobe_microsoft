@@ -4,7 +4,7 @@ import { ExperienceLogoImg } from './ExperienceLogoImg.jsx'
 export function MicrositeHeader() {
   return (
     <header className="landHeader" aria-label={BRAND_NAME}>
-      <ExperienceLogoImg className="landHeader__logo" width={48} height={48} />
+      <ExperienceLogoImg className="landHeader__logo" width={200} height={200} />
     </header>
   )
 }
