@@ -163,13 +163,17 @@
 }
 
 .shell--landing {
+  box-sizing: border-box;
   max-width: 36rem;
-  width: 100%;
-  margin: 0 auto;
+  width: min(36rem, calc(100% - max(24px, env(safe-area-inset-left) + env(safe-area-inset-right) + 8px)));
+  margin: max(16px, env(safe-area-inset-top)) auto max(20px, env(safe-area-inset-bottom));
   flex: 0 0 auto;
-  padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
-    max(28px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  padding: max(22px, env(safe-area-inset-top)) max(22px, env(safe-area-inset-right))
+    max(28px, env(safe-area-inset-bottom)) max(22px, env(safe-area-inset-left));
   text-align: left;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: none;
 }
 
 .shell--editing {
