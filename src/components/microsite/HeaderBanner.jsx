@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { apiUrl } from '../../api/apiBase.js'
-import { getGalleryPickId } from '../../constants/gallerySelection.js'
+import { getGalleryPickFileExt, getGalleryPickId } from '../../constants/gallerySelection.js'
 
 /**
  * Shows the PNG selected on the landing page (admin gallery) in the session header.
@@ -13,6 +13,15 @@ export function HeaderBanner({ cacheKey = 0 }) {
     let objectUrl = ''
 
     const id = getGalleryPickId()
+    const ext = getGalleryPickFileExt().toLowerCase()
+    if (ext === 'pdf') {
+      Promise.resolve().then(() => {
+        if (!cancelled) setSrc(id ? 'pdf' : '')
+      })
+      return () => {
+        cancelled = true
+      }
+    }
     if (!id) {
       Promise.resolve().then(() => {
         if (!cancelled) setSrc('')
@@ -41,6 +50,13 @@ export function HeaderBanner({ cacheKey = 0 }) {
     }
   }, [cacheKey])
 
+  if (src === 'pdf') {
+    return (
+      <span className="sessionHeader__heroPdf" title="PDF template">
+        PDF
+      </span>
+    )
+  }
   if (!src) return null
   return <img className="sessionHeader__heroImg" src={src} alt="" />
 }

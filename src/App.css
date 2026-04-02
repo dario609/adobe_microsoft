@@ -479,6 +479,27 @@
     0 0 0 9px #22c55e;
 }
 
+.landGallery__img--pdf {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  background: #f1f5f9;
+  border: 2px solid #e2e8f0;
+}
+
+.landGallery__pick--active .landGallery__img--pdf {
+  border-color: transparent;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 4px #22c55e,
+    0 0 0 7px #ffffff,
+    0 0 0 9px #22c55e;
+}
+
 .landGallery__caption {
   display: block;
   font-size: 0.875rem;
@@ -549,6 +570,23 @@
   border-radius: 0;
   box-shadow: none;
   display: block;
+}
+
+.sessionHeader__heroPdf {
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
 }
 
 .sessionHeader__actions {
@@ -663,30 +701,58 @@
   color: #64748b;
 }
 
-.btn--adminGradient {
+/* Admin primary CTA — solid, matches landing Start (.btn--primary) */
+.btn--adminPrimary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 10px 18px;
   border-radius: 12px;
-  border: none;
+  border: 1px solid #1d4ed8;
   font: inherit;
   font-weight: 600;
   font-size: 0.9rem;
   color: #ffffff;
   text-decoration: none;
   cursor: pointer;
-  background: linear-gradient(92deg, #ef4444 0%, #f97316 28%, #a855f7 62%, #2563eb 100%);
-  box-shadow:
-    0 10px 22px rgba(168, 85, 247, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  background: #2563eb;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 }
 
-.btn--adminGradient:hover {
-  filter: brightness(1.05);
+.btn--adminPrimary:hover:not(:disabled) {
+  background: #1d4ed8;
+  border-color: #1e40af;
 }
 
-.btn--adminGradient:disabled {
+.btn--adminPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--adminOutline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 1px solid #2563eb;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1d4ed8;
+  text-decoration: none;
+  cursor: pointer;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.btn--adminOutline:hover:not(:disabled) {
+  background: #eff6ff;
+  border-color: #1d4ed8;
+  color: #1e40af;
+}
+
+.btn--adminOutline:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -710,7 +776,8 @@
   background: #f1f5f9;
 }
 
-.btn--adminGradient.btn--small,
+.btn--adminPrimary.btn--small,
+.btn--adminOutline.btn--small,
 .btn--adminSoft.btn--small {
   padding: 8px 12px;
   font-size: 0.8125rem;
@@ -850,6 +917,37 @@
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 12px 16px;
+}
+
+.adminGallery__toolbarRow--singleLine {
+  flex-wrap: nowrap;
+  align-items: flex-end;
+}
+
+@media (max-width: 960px) {
+  .adminGallery__toolbarRow--singleLine {
+    flex-wrap: wrap;
+  }
+}
+
+.adminGallery__field--toolbar {
+  flex: 1 1 180px;
+  min-width: 0;
+  max-width: none;
+}
+
+.adminGallery__textInput--toolbarTemplate {
+  width: 100%;
+  min-width: 0;
+}
+
+.adminGallery__fileLabel {
+  flex: 0 0 auto;
+}
+
+.adminGallery__browseTemplates {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .adminGallery__fieldRow {
@@ -1072,6 +1170,18 @@
   height: 100%;
   object-fit: contain;
   display: block;
+}
+
+.adminGallery__thumb--pdf {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
 }
 
 .adminGallery__name {
@@ -1504,16 +1614,15 @@
 }
 
 .btn--primary {
-  border: none;
+  border: 1px solid #1d4ed8;
   color: #ffffff;
-  background: linear-gradient(92deg, #ef4444 0%, #f97316 30%, #a855f7 60%, #2563eb 100%);
-  box-shadow:
-    0 12px 24px rgba(168, 85, 247, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  background: #2563eb;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
 }
 
 .btn--primary:not(:disabled):hover {
-  filter: saturate(1.05) brightness(1.02);
+  background: #1d4ed8;
+  border-color: #1e40af;
 }
 
 .btn--primary:not(:disabled):active {

@@ -1,5 +1,6 @@
 import './App.css'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { apiUrl } from './api/apiBase.js'
 import { AdminPasswordGate } from './components/microsite/AdminPasswordGate.jsx'
 import { AdminPanel } from './components/microsite/AdminPanel.jsx'
 import { ExpressEditorHost } from './components/microsite/ExpressEditorHost.jsx'
@@ -43,14 +44,47 @@ export default function App() {
   return <MicrositeRoutes />
 }
 
+function useLandingBackgroundStyle() {
+  const [style, setStyle] = useState(undefined)
+  useEffect(() => {
+    let cancelled = false
+    let objectUrl = ''
+    ;(async () => {
+      try {
+        const res = await fetch(apiUrl('/api/branding/landing-background'), { cache: 'no-store' })
+        if (!res.ok || cancelled) return
+        const blob = await res.blob()
+        if (cancelled) return
+        objectUrl = URL.createObjectURL(blob)
+        setStyle({
+          backgroundImage: `linear-gradient(rgba(250, 250, 255, 0.88), rgba(250, 250, 255, 0.92)), url(${objectUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        })
+      } catch {
+        if (!cancelled) setStyle(undefined)
+      }
+    })()
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [])
+  return style
+}
+
 function MicrositeRoutes() {
   const m = useMicrositeWorkflow()
   const isEditing = m.phase === 'editing'
   const [galleryCacheKey, setGalleryCacheKey] = useState(0)
+  const landingBgStyle = useLandingBackgroundStyle()
 
   return (
     <div className={`appRoot${isEditing ? ' appRoot--editing' : ' appRoot--landing'}`}>
-      <div className={`shell${isEditing ? ' shell--editing' : ' shell--landing'}`}>
+      <div
+        className={`shell${isEditing ? ' shell--editing' : ' shell--landing'}`}
+        style={!isEditing ? landingBgStyle : undefined}
+      >
         {!isEditing ? (
           <>
             <MicrositeHeader />
@@ -72,7 +106,6 @@ function MicrositeRoutes() {
             <SessionHeader
               remainingSeconds={m.remaining}
               showTimer={m.showSessionTimer}
-              onFinish={m.openFinishModal}
               onLeave={m.openLeaveConfirm}
               uploadBusy={m.uploadBusy}
               bannerCacheKey={galleryCacheKey}
@@ -104,7 +137,7 @@ function MicrositeRoutes() {
 
         {m.showNameModal ? (
           <FileNameModal
-            variant={m.nameModalMode}
+            variant="start"
             value={m.nameInput}
             onChange={m.setNameInput}
             onConfirm={m.confirmFileName}

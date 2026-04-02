@@ -5,7 +5,6 @@ import { HeaderBanner } from './HeaderBanner.jsx'
 export function SessionHeader({
   remainingSeconds,
   showTimer,
-  onFinish,
   onLeave,
   uploadBusy,
   bannerCacheKey = 0,
@@ -50,14 +49,6 @@ export function SessionHeader({
             <span className="sessionHeader__timerPill">{formatClock(remainingSeconds)}</span>
           </div>
         ) : null}
-        <button
-          type="button"
-          className="sessionHeader__finish"
-          onClick={onFinish}
-          disabled={uploadBusy}
-        >
-          Finish
-        </button>
       </div>
     </header>
   )

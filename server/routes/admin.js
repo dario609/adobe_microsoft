@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { uploadSessionBanner } from '../middleware/bannerUpload.js'
 import { uploadExperienceLogo } from '../middleware/experienceLogoUpload.js'
+import { uploadLandingBackground } from '../middleware/landingBackgroundUpload.js'
 import { requireAdminGate } from '../middleware/requireAdminGate.js'
 import { deleteBanner, getResolvedBannerForRead, writeBannerPng } from '../utils/bannerStore.js'
 import {
@@ -8,8 +9,18 @@ import {
   experienceLogoExists,
   writeExperienceLogo,
 } from '../utils/experienceLogoStore.js'
+import {
+  deleteLandingBackground,
+  writeLandingBackground,
+} from '../utils/landingBackgroundStore.js'
 import { readRuntimeConfigOverrides } from '../utils/runtimeConfigStore.js'
 import { listUploadHistory } from '../utils/uploadHistory.js'
+
+function rasterExtFromMime(m) {
+  if (m === 'image/jpeg') return 'jpg'
+  if (m === 'image/webp') return 'webp'
+  return 'png'
+}
 
 export function createAdminRouter() {
   const router = Router()
@@ -74,6 +85,27 @@ export function createAdminRouter() {
 
   router.delete('/admin/experience-logo', requireAdminGate, async (_req, res) => {
     await deleteExperienceLogo()
+    res.json({ ok: true })
+  })
+
+  router.post('/admin/landing-background', requireAdminGate, (req, res) => {
+    uploadLandingBackground(req, res, async (err) => {
+      if (err) return res.status(400).json({ error: err.message || String(err) })
+      const buf = req.file?.buffer
+      const m = req.file?.mimetype
+      if (!buf?.length || !m) return res.status(400).json({ error: 'Missing file field "background".' })
+      try {
+        await writeLandingBackground(buf, rasterExtFromMime(m))
+        return res.json({ ok: true })
+      } catch (e) {
+        console.error('landing background save:', e)
+        return res.status(500).json({ error: 'Could not save landing background.' })
+      }
+    })
+  })
+
+  router.delete('/admin/landing-background', requireAdminGate, async (_req, res) => {
+    await deleteLandingBackground()
     res.json({ ok: true })
   })
 

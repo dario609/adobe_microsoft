@@ -20,6 +20,7 @@ function mapItem(it) {
     bytes: it.bytes,
     uploadedAt: it.uploadedAt,
     templateId: it.templateId || '',
+    fileExt: it.fileExt || 'png',
   }
 }
 

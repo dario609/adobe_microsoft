@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { apiFetch } from '../../api/apiFetch.js'
 import { useRuntimeConfig } from '../../hooks/useRuntimeConfig.js'
+import { fileMatchesContentPolicy } from '../../utils/contentUploadPolicy.js'
 import { ExperienceLogoImg } from './ExperienceLogoImg.jsx'
 
 async function parseResponse(res) {
@@ -30,6 +31,8 @@ const CONTENT_IMAGE_OPTIONS = [
   { value: 'image/png', label: 'PNG' },
   { value: 'image/jpeg', label: 'JPEG' },
   { value: 'image/webp', label: 'WebP' },
+  { value: 'application/pdf-standard', label: 'PDF (standard)' },
+  { value: 'application/pdf-print', label: 'PDF (print)' },
 ]
 
 export function AdminSettingsPanel() {
@@ -50,6 +53,7 @@ export function AdminSettingsPanel() {
   const [thankYouDraft, setThankYouDraft] = useState('')
   const [logoBusy, setLogoBusy] = useState(false)
   const [logoKey, setLogoKey] = useState(0)
+  const [landBgBusy, setLandBgBusy] = useState(false)
 
   useEffect(() => {
     ;(async () => {
@@ -96,6 +100,10 @@ export function AdminSettingsPanel() {
     const f = e.target.files?.[0]
     e.target.value = ''
     if (!f) return
+    if (!fileMatchesContentPolicy(f, contentImageMime)) {
+      setErr('Logo file must match the allowed type in Content settings below.')
+      return
+    }
     setErr('')
     setMsg('')
     setLogoBusy(true)
@@ -131,6 +139,44 @@ export function AdminSettingsPanel() {
       setErr(er?.message || 'Could not remove logo.')
     } finally {
       setLogoBusy(false)
+    }
+  }
+
+  const uploadLandingBackground = async (e) => {
+    const f = e.target.files?.[0]
+    e.target.value = ''
+    if (!f) return
+    setErr('')
+    setMsg('')
+    setLandBgBusy(true)
+    try {
+      const fd = new FormData()
+      fd.append('background', f)
+      const res = await apiFetch('/api/admin/landing-background', { method: 'POST', body: fd })
+      const data = await parseResponse(res)
+      if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : 'Upload failed.')
+      setMsg('Landing page background updated. Refresh the user page to see it.')
+    } catch (er) {
+      setErr(er?.message || 'Could not upload background.')
+    } finally {
+      setLandBgBusy(false)
+    }
+  }
+
+  const clearLandingBackground = async () => {
+    if (!window.confirm('Remove the landing page background?')) return
+    setErr('')
+    setMsg('')
+    setLandBgBusy(true)
+    try {
+      const res = await apiFetch('/api/admin/landing-background', { method: 'DELETE' })
+      const data = await parseResponse(res)
+      if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : 'Remove failed.')
+      setMsg('Landing background removed.')
+    } catch (er) {
+      setErr(er?.message || 'Could not remove background.')
+    } finally {
+      setLandBgBusy(false)
     }
   }
 
@@ -249,7 +295,6 @@ export function AdminSettingsPanel() {
       }
       setAdminPasswordEnabled(Boolean(data?.adminPasswordEnabled))
       setAdminPasswordSet(Boolean(data?.adminPasswordSet))
-      setAdminPasswordInput('')
       setMsg('Admin password settings updated.')
       await reloadConfig()
     } catch (e) {
@@ -326,7 +371,7 @@ export function AdminSettingsPanel() {
     <section className="adminCard adminCard--light adminSettings">
       <h2 className="adminCard__title adminCard__title--small">Session settings</h2>
       <p className="adminCard__sub adminCard__sub--dark">
-        Timer, visitor site gate, gallery image type, guest thank-you message, and operator admin access.
+        Branding, content rules, landing background, timer, admin panel password, and visitor site password.
       </p>
       {loading ? <p className="adminGallery__loading">Loading settings…</p> : null}
       {err ? <p className="appError adminGallery__error">{err}</p> : null}
@@ -339,14 +384,14 @@ export function AdminSettingsPanel() {
             <p className="adminSettings__cardTitle">Experience logo</p>
           </div>
           <p className="adminSettings__hint">
-            Appears on the template picker and beside the guest&apos;s design in the Express header. Format matches
-            your Content settings (PNG, JPEG, or WebP).
+            Shown on the template picker and beside the guest&apos;s design in Express. Must match the allowed file type
+            in Content settings (including PDF when selected).
           </p>
           <div className="adminSettings__logoRow">
             <ExperienceLogoImg key={logoKey} className="landHeader__logo" width={56} height={56} />
           </div>
           <div className="adminSettings__btnRow">
-            <label className="btn btn--adminGradient btn--small">
+            <label className="btn btn--adminPrimary btn--small">
               {logoBusy ? 'Working…' : 'Upload logo'}
               <input
                 type="file"
@@ -373,10 +418,10 @@ export function AdminSettingsPanel() {
             <p className="adminSettings__cardTitle">Gallery &amp; banner uploads</p>
           </div>
           <p className="adminSettings__hint">
-            Operators only see the selected image type in the file picker (server still enforces this type).
+            Gallery, session banner, and experience logo uploads must match this type. The server rejects anything else.
           </p>
           <label className="adminSettings__label" htmlFor="content-image-mime">
-            Allowed image format
+            Allowed file format
           </label>
           <select
             id="content-image-mime"
@@ -403,10 +448,41 @@ export function AdminSettingsPanel() {
             disabled={saving || loading || unsupported}
             placeholder="Thank you for your submission…"
           />
-          <button type="submit" className="btn btn--adminGradient btn--small" disabled={saving || loading || unsupported}>
+          <button type="submit" className="btn btn--adminPrimary btn--small" disabled={saving || loading || unsupported}>
             Save content settings
           </button>
         </form>
+
+        <div className="adminSettings__card">
+          <div className="adminSettings__cardHead">
+            <span className="adminSettings__badge adminSettings__badge--site">Landing</span>
+            <p className="adminSettings__cardTitle">User page background</p>
+          </div>
+          <p className="adminSettings__hint">
+            Full-page backdrop behind the template picker (PNG, JPEG, or WebP only). Leave empty for the default
+            gradient.
+          </p>
+          <div className="adminSettings__btnRow">
+            <label className="btn btn--adminPrimary btn--small">
+              {landBgBusy ? 'Working…' : 'Upload background'}
+              <input
+                type="file"
+                className="adminGallery__fileInput"
+                accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                disabled={landBgBusy || loading}
+                onChange={uploadLandingBackground}
+              />
+            </label>
+            <button
+              type="button"
+              className="btn btn--adminSoft btn--small"
+              disabled={landBgBusy || loading}
+              onClick={clearLandingBackground}
+            >
+              Remove background
+            </button>
+          </div>
+        </div>
 
         <form className="adminSettings__card" onSubmit={saveTimer}>
           <label className="adminSettings__label" htmlFor="session-seconds">
@@ -422,16 +498,64 @@ export function AdminSettingsPanel() {
             onChange={(e) => setSessionSeconds(e.target.value)}
             disabled={saving || loading || unsupported}
           />
-          <button type="submit" className="btn btn--adminGradient btn--small" disabled={saving || loading || unsupported}>
+          <button type="submit" className="btn btn--adminPrimary btn--small" disabled={saving || loading || unsupported}>
             Save timer
           </button>
+        </form>
+
+        <form className="adminSettings__card adminSettings__card--admin" onSubmit={saveAdminPassword}>
+          <div className="adminSettings__cardHead">
+            <span className="adminSettings__badge adminSettings__badge--admin">Admin</span>
+            <p className="adminSettings__cardTitle">Admin panel password</p>
+          </div>
+          <p className="adminSettings__hint">
+            Protects <code className="adminSettings__code">/admin</code>. Shown below when saved (same machine /
+            trusted operators only).
+          </p>
+          <label className="adminSettings__check">
+            <input
+              type="checkbox"
+              checked={adminPasswordEnabled}
+              onChange={(e) => setAdminPasswordEnabled(e.target.checked)}
+              disabled={saving || loading || unsupported}
+            />
+            Require password to open admin panel
+          </label>
+          <label className="adminSettings__label" htmlFor="admin-password">
+            Admin password {adminPasswordEnabled ? '(required when enabled)' : '(optional)'}
+          </label>
+          <input
+            id="admin-password"
+            className="adminSettings__input adminSettings__input--pw"
+            type="text"
+            autoComplete="off"
+            spellCheck="false"
+            value={adminPasswordInput}
+            onChange={(e) => setAdminPasswordInput(e.target.value)}
+            placeholder={adminPlaceholder}
+            disabled={saving || loading || unsupported}
+          />
+          <div className="adminSettings__btnRow">
+            <button type="submit" className="btn btn--adminPrimary btn--small" disabled={saving || loading || unsupported}>
+              Save admin password
+            </button>
+            <button
+              type="button"
+              className="btn btn--adminSoft btn--small"
+              disabled={saving || loading || unsupported || !adminPasswordSet}
+              onClick={clearAdminPassword}
+            >
+              Clear admin password
+            </button>
+          </div>
         </form>
 
         <form className="adminSettings__card adminSettings__card--site" onSubmit={saveSitePassword}>
           <div className="adminSettings__cardHead">
             <span className="adminSettings__badge adminSettings__badge--site">Site</span>
-            <p className="adminSettings__cardTitle">User site password</p>
+            <p className="adminSettings__cardTitle">Visitor site password</p>
           </div>
+          <p className="adminSettings__hint">Main kiosk / template picker — not the admin panel.</p>
           <label className="adminSettings__check">
             <input
               type="checkbox"
@@ -456,8 +580,8 @@ export function AdminSettingsPanel() {
             disabled={saving || loading || unsupported}
           />
           <div className="adminSettings__btnRow">
-            <button type="submit" className="btn btn--adminGradient btn--small" disabled={saving || loading || unsupported}>
-              Save user password
+            <button type="submit" className="btn btn--adminPrimary btn--small" disabled={saving || loading || unsupported}>
+              Save visitor password
             </button>
             <button
               type="button"
@@ -465,50 +589,7 @@ export function AdminSettingsPanel() {
               disabled={saving || loading || unsupported || !sitePasswordSet}
               onClick={clearSitePassword}
             >
-              Clear user password
-            </button>
-          </div>
-        </form>
-
-        <form className="adminSettings__card adminSettings__card--admin" onSubmit={saveAdminPassword}>
-          <div className="adminSettings__cardHead">
-            <span className="adminSettings__badge adminSettings__badge--admin">Admin</span>
-            <p className="adminSettings__cardTitle">Operator password</p>
-          </div>
-          <label className="adminSettings__check">
-            <input
-              type="checkbox"
-              checked={adminPasswordEnabled}
-              onChange={(e) => setAdminPasswordEnabled(e.target.checked)}
-              disabled={saving || loading || unsupported}
-            />
-            Require admin password
-          </label>
-          <label className="adminSettings__label" htmlFor="admin-password">
-            Admin password {adminPasswordEnabled ? '(required when enabled)' : '(optional)'}
-          </label>
-          <input
-            id="admin-password"
-            className="adminSettings__input adminSettings__input--pw"
-            type="text"
-            autoComplete="off"
-            spellCheck="false"
-            value={adminPasswordInput}
-            onChange={(e) => setAdminPasswordInput(e.target.value)}
-            placeholder={adminPlaceholder}
-            disabled={saving || loading || unsupported}
-          />
-          <div className="adminSettings__btnRow">
-            <button type="submit" className="btn btn--adminGradient btn--small" disabled={saving || loading || unsupported}>
-              Save admin password
-            </button>
-            <button
-              type="button"
-              className="btn btn--adminSoft btn--small"
-              disabled={saving || loading || unsupported || !adminPasswordSet}
-              onClick={clearAdminPassword}
-            >
-              Clear admin password
+              Clear visitor password
             </button>
           </div>
         </form>

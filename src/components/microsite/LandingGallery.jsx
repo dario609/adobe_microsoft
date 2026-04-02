@@ -34,14 +34,15 @@ export function LandingGallery({ onSelectionChange }) {
     const it = items.find((x) => x.id === selectedId)
     if (!it) return
     const tid = it.templateId || ''
+    const fe = it.fileExt || 'png'
     if (getGalleryPickId() === it.id && getGalleryTemplateId() === tid) return
-    setGalleryPickId(it.id, tid)
+    setGalleryPickId(it.id, tid, fe)
     onSelectionChange?.()
   }, [items, selectedId, onSelectionChange])
 
   const pick = (it) => {
     setSelectedId(it.id)
-    setGalleryPickId(it.id, it.templateId || '')
+    setGalleryPickId(it.id, it.templateId || '', it.fileExt || 'png')
     onSelectionChange?.()
   }
 
@@ -59,6 +60,7 @@ export function LandingGallery({ onSelectionChange }) {
           {items.map((it) => {
             const src = apiUrl(`/api/gallery/image/${it.id}?v=${encodeURIComponent(it.uploadedAt || '')}`)
             const active = selectedId === it.id
+            const isPdf = (it.fileExt || 'png').toLowerCase() === 'pdf'
             return (
               <li key={it.id} className="landGallery__tile">
                 <button
@@ -67,7 +69,13 @@ export function LandingGallery({ onSelectionChange }) {
                   onClick={() => pick(it)}
                   aria-pressed={active}
                 >
-                  <img className="landGallery__img" src={src} alt="" loading="lazy" />
+                  {isPdf ? (
+                    <span className="landGallery__img landGallery__img--pdf" aria-hidden>
+                      PDF
+                    </span>
+                  ) : (
+                    <img className="landGallery__img" src={src} alt="" loading="lazy" />
+                  )}
                   <span className="landGallery__caption">{displayName(it)}</span>
                 </button>
               </li>

@@ -4,8 +4,6 @@ import { getInitializedSdk } from '../adobe/sdk.js'
 import { uploadDesignToServer } from '../api/uploadDesign.js'
 import { ADOBE_TEMPLATE_ID, BRAND_NAME, REQUIRE_ADOBE_TEMPLATE } from '../constants/config.js'
 import { useRuntimeConfig } from './useRuntimeConfig.js'
-import { tryAutomatePublishExport } from '../adobe/tryAutomatePublishExport.js'
-import { FINISH_AFTER_NAME_BANNER } from '../constants/flow.js'
 import { blobFromAdobeExport, getPublishAssetPayload } from '../utils/adobeAsset.js'
 import { friendlyExportFailure } from '../utils/uploadErrors.js'
 import { clearGalleryPick, getGalleryPickId, getGalleryTemplateId } from '../constants/gallerySelection.js'
@@ -24,7 +22,6 @@ export function useMicrositeWorkflow() {
   const [remaining, setRemaining] = useState(sessionSeconds)
   const [timerRunning, setTimerRunning] = useState(false)
   const [showNameModal, setShowNameModal] = useState(false)
-  const [nameModalMode, setNameModalMode] = useState('finish')
   const [nameInput, setNameInput] = useState('')
   const [uploadBusy, setUploadBusy] = useState(false)
   const [banner, setBanner] = useState('')
@@ -237,46 +234,22 @@ export function useMicrositeWorkflow() {
       setError('Choose a gallery image that has a template ID, or set VITE_ADOBE_TEMPLATE_ID in .env.')
       return
     }
-    setNameModalMode('start')
     setNameInput(pickupBaseNameRef.current || '')
     setShowNameModal(true)
   }, [status])
 
-  const openFinishModal = useCallback(() => {
-    setNameModalMode('finish')
-    setNameInput(pickupBaseNameRef.current || '')
-    setShowNameModal(true)
-  }, [])
-
   const confirmFileName = useCallback(async () => {
     const n = nameInput.trim()
     if (!n) {
-      setError(
-        nameModalMode === 'start'
-          ? 'Please enter the name you will use when you pickup the item.'
-          : 'Please enter your pickup name.'
-      )
+      setError('Please enter the name you will use when you pickup the item.')
       return
     }
     pickupBaseNameRef.current = n
-    const mode = nameModalMode
     setShowNameModal(false)
     setError('')
     setBanner('')
-
-    if (mode === 'start') {
-      launchEditor()
-      return
-    }
-
-    try {
-      await tryAutomatePublishExport(editorRef.current)
-    } catch (e) {
-      console.warn('tryAutomatePublishExport:', e)
-    }
-
-    setBanner(FINISH_AFTER_NAME_BANNER)
-  }, [nameInput, nameModalMode, launchEditor])
+    launchEditor()
+  }, [nameInput, launchEditor])
 
   const cancelNameModal = useCallback(() => {
     setShowNameModal(false)
@@ -299,7 +272,6 @@ export function useMicrositeWorkflow() {
     remaining,
     banner,
     showNameModal,
-    nameModalMode,
     nameInput,
     setNameInput,
     uploadBusy,
@@ -308,7 +280,6 @@ export function useMicrositeWorkflow() {
     openLeaveConfirm,
     cancelLeaveConfirm,
     confirmLeaveSession,
-    openFinishModal,
     confirmFileName,
     cancelNameModal,
     canStart,

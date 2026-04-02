@@ -4,6 +4,7 @@ import { apiFetch } from '../../api/apiFetch.js'
 import { apiUrl } from '../../api/apiBase.js'
 import { useRuntimeConfig } from '../../hooks/useRuntimeConfig.js'
 import { validateGalleryDraftLocal } from '../../utils/galleryDisplay.js'
+import { fileMatchesContentPolicy } from '../../utils/contentUploadPolicy.js'
 
 async function parseJson(res) {
   const ct = res.headers.get('content-type') || ''
@@ -46,7 +47,7 @@ function apiFailureMessage(res, data, op = 'load') {
 }
 
 export function AdminGalleryPanel() {
-  const { contentImageAccept, contentImageLabel } = useRuntimeConfig()
+  const { contentImageAccept, contentImageLabel, contentImageMime } = useRuntimeConfig()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -117,8 +118,13 @@ export function AdminGalleryPanel() {
     return apiFailureMessage(res, data, 'upload') || `Upload failed (${res.status}).`
   }
 
-  /** Upload one image (type set in Session settings); optional template ID applies to this upload. */
+  /** Upload one file (type enforced in Session settings). */
   const uploadOne = async (file) => {
+    if (!fileMatchesContentPolicy(file, contentImageMime)) {
+      throw new Error(
+        `This file does not match the allowed type (${contentImageLabel}). Choose another file or update Content settings.`
+      )
+    }
     const fd = new FormData()
     fd.append('images', file)
     const tid = uploadTemplateId.trim()
@@ -156,6 +162,14 @@ export function AdminGalleryPanel() {
     if (!tid) {
       setActionError('Enter the template ID above before uploading — it is required for every image.')
       return
+    }
+    for (const f of files) {
+      if (!fileMatchesContentPolicy(f, contentImageMime)) {
+        setActionError(
+          `Files must match the allowed type (${contentImageLabel}). Remove files that do not match.`
+        )
+        return
+      }
     }
     setActionError('')
     setBusy(true)
@@ -243,6 +257,12 @@ export function AdminGalleryPanel() {
   }
 
   const replacePng = async (id, file) => {
+    if (!fileMatchesContentPolicy(file, contentImageMime)) {
+      setActionError(
+        `File must match the allowed type (${contentImageLabel}). Update Content settings or choose another file.`
+      )
+      return
+    }
     setActionError('')
     setBusy(true)
     try {
@@ -297,9 +317,23 @@ export function AdminGalleryPanel() {
   return (
     <div className="adminGallery">
       <div className="adminGallery__toolbar">
-        <div className="adminGallery__toolbarRow">
-          <label className="btn btn--adminGradient btn--small adminGallery__fileLabel">
-            {busy ? 'Working…' : `Upload ${contentImageLabel} images`}
+        <div className="adminGallery__toolbarRow adminGallery__toolbarRow--singleLine">
+          <div className="adminGallery__field adminGallery__field--toolbar">
+            <label className="adminGallery__fieldLabel" htmlFor="upload-template-id">
+              Template ID (required)
+            </label>
+            <input
+              id="upload-template-id"
+              className="adminGallery__textInput adminGallery__textInput--template adminGallery__textInput--toolbarTemplate"
+              type="text"
+              placeholder="Adobe template URN"
+              value={uploadTemplateId}
+              onChange={(e) => setUploadTemplateId(e.target.value)}
+              disabled={busy}
+            />
+          </div>
+          <label className="btn btn--adminPrimary btn--small adminGallery__fileLabel">
+            {busy ? 'Working…' : `Upload ${contentImageLabel}`}
             <input
               className="adminGallery__fileInput"
               type="file"
@@ -309,30 +343,14 @@ export function AdminGalleryPanel() {
               onChange={onFiles}
             />
           </label>
-          <div className="adminGallery__field">
-            <label className="adminGallery__fieldLabel" htmlFor="upload-template-id">
-              Template ID (required)
-            </label>
-            <div className="adminGallery__fieldRow">
-              <input
-                id="upload-template-id"
-                className="adminGallery__textInput adminGallery__textInput--template"
-                type="text"
-                placeholder="Adobe template URN for these uploads"
-                value={uploadTemplateId}
-                onChange={(e) => setUploadTemplateId(e.target.value)}
-                disabled={busy}
-              />
-              <a
-                className="adminGallery__templatesLink"
-                href={ADOBE_EXPLORE_TEMPLATES_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Browse Adobe templates
-              </a>
-            </div>
-          </div>
+          <a
+            className="btn btn--adminOutline btn--small adminGallery__browseTemplates"
+            href={ADOBE_EXPLORE_TEMPLATES_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Browse Adobe templates
+          </a>
         </div>
       </div>
       {loadError ? (
@@ -353,10 +371,18 @@ export function AdminGalleryPanel() {
         {items.map((it) => {
           const d = draftById[it.id] || { templateId: '', originalName: it.originalName || '' }
           const fe = fieldErrorsById[it.id] || {}
+          const ext = (it.fileExt || 'png').toLowerCase()
+          const isPdf = ext === 'pdf'
           return (
             <li key={it.id} className="adminGallery__card">
               <div className="adminGallery__thumbWrap">
-                <img className="adminGallery__thumb" src={thumbSrc(it)} alt="" loading="lazy" />
+                {isPdf ? (
+                  <div className="adminGallery__thumb adminGallery__thumb--pdf" aria-hidden>
+                    PDF
+                  </div>
+                ) : (
+                  <img className="adminGallery__thumb" src={thumbSrc(it)} alt="" loading="lazy" />
+                )}
               </div>
               <label className="adminGallery__miniLabel" htmlFor={`name-${it.id}`}>
                 Display name
@@ -420,7 +446,7 @@ export function AdminGalleryPanel() {
               <div className="adminGallery__cardActions adminGallery__cardActions--two">
                 <button
                   type="button"
-                  className="btn btn--adminGradient btn--small adminGallery__actionBtn"
+                  className="btn btn--adminPrimary btn--small adminGallery__actionBtn"
                   disabled={busy}
                   onClick={() => saveMeta(it.id)}
                 >
