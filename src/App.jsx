@@ -60,6 +60,7 @@ function useLandingBackgroundStyle() {
           backgroundImage: `linear-gradient(rgba(250, 250, 255, 0.88), rgba(250, 250, 255, 0.92)), url(${objectUrl})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
         })
       } catch {
         if (!cancelled) setStyle(undefined)
@@ -80,11 +81,11 @@ function MicrositeRoutes() {
   const landingBgStyle = useLandingBackgroundStyle()
 
   return (
-    <div className={`appRoot${isEditing ? ' appRoot--editing' : ' appRoot--landing'}`}>
-      <div
-        className={`shell${isEditing ? ' shell--editing' : ' shell--landing'}`}
-        style={!isEditing ? landingBgStyle : undefined}
-      >
+    <div
+      className={`appRoot${isEditing ? ' appRoot--editing' : ' appRoot--landing'}`}
+      style={!isEditing ? landingBgStyle : undefined}
+    >
+      <div className={`shell${isEditing ? ' shell--editing' : ' shell--landing'}`}>
         {!isEditing ? (
           <>
             <MicrositeHeader />
