@@ -13,6 +13,13 @@ const EMPTY = {
   adminAccessPassword: null,
   contentImageMime: null,
   submissionThankYouMessage: null,
+  uploadDestination: null,
+  smbHost: null,
+  smbShare: null,
+  smbPathPrefix: null,
+  smbDomain: null,
+  smbUsername: null,
+  smbPassword: null,
 }
 
 function normalize(raw) {
@@ -35,6 +42,23 @@ function normalize(raw) {
     else out.contentImageMime = String(raw.contentImageMime).trim() || null
     if (raw.submissionThankYouMessage == null) out.submissionThankYouMessage = null
     else out.submissionThankYouMessage = String(raw.submissionThankYouMessage).slice(0, 2000)
+    if (raw.uploadDestination == null) out.uploadDestination = null
+    else {
+      const u = String(raw.uploadDestination).trim().toLowerCase()
+      out.uploadDestination = u === 'smb' ? 'smb' : u === 'dropbox' ? 'dropbox' : null
+    }
+    if (raw.smbHost == null) out.smbHost = null
+    else out.smbHost = String(raw.smbHost).trim().slice(0, 253)
+    if (raw.smbShare == null) out.smbShare = null
+    else out.smbShare = String(raw.smbShare).trim().slice(0, 80)
+    if (raw.smbPathPrefix == null) out.smbPathPrefix = null
+    else out.smbPathPrefix = String(raw.smbPathPrefix).trim().replace(/\\/g, '/').slice(0, 500)
+    if (raw.smbDomain == null) out.smbDomain = null
+    else out.smbDomain = String(raw.smbDomain).trim().slice(0, 120)
+    if (raw.smbUsername == null) out.smbUsername = null
+    else out.smbUsername = String(raw.smbUsername).trim().slice(0, 120)
+    if (raw.smbPassword == null) out.smbPassword = null
+    else out.smbPassword = String(raw.smbPassword).slice(0, 500)
   }
   return out
 }

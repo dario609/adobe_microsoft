@@ -54,6 +54,14 @@ export function AdminSettingsPanel() {
   const [logoBusy, setLogoBusy] = useState(false)
   const [logoKey, setLogoKey] = useState(0)
   const [landBgBusy, setLandBgBusy] = useState(false)
+  const [uploadDestination, setUploadDestination] = useState('dropbox')
+  const [smbHost, setSmbHost] = useState('')
+  const [smbShare, setSmbShare] = useState('')
+  const [smbPathPrefix, setSmbPathPrefix] = useState('')
+  const [smbDomain, setSmbDomain] = useState('')
+  const [smbUsername, setSmbUsername] = useState('')
+  const [smbPasswordInput, setSmbPasswordInput] = useState('')
+  const [smbPasswordSet, setSmbPasswordSet] = useState(false)
 
   useEffect(() => {
     ;(async () => {
@@ -87,6 +95,24 @@ export function AdminSettingsPanel() {
           }
         } catch {
           /* ignore — not signed in or older API */
+        }
+        try {
+          const stRes = await apiFetch('/api/admin/upload-storage', { cache: 'no-store' })
+          if (stRes.ok) {
+            const sd = await parseResponse(stRes)
+            if (sd?.uploadDestination === 'smb') setUploadDestination('smb')
+            else setUploadDestination('dropbox')
+            if (typeof sd?.smbHost === 'string') setSmbHost(sd.smbHost)
+            if (typeof sd?.smbShare === 'string') setSmbShare(sd.smbShare)
+            if (typeof sd?.smbPathPrefix === 'string') setSmbPathPrefix(sd.smbPathPrefix)
+            if (typeof sd?.smbDomain === 'string') setSmbDomain(sd.smbDomain)
+            if (typeof sd?.smbUsername === 'string') setSmbUsername(sd.smbUsername)
+            setSmbPasswordSet(Boolean(sd?.smbPasswordSet))
+            if (typeof sd?.smbPassword === 'string' && sd.smbPassword) setSmbPasswordInput(sd.smbPassword)
+            else setSmbPasswordInput('')
+          }
+        } catch {
+          /* ignore */
         }
       } catch (e) {
         setErr(e?.message || 'Could not load settings.')
@@ -304,6 +330,69 @@ export function AdminSettingsPanel() {
     }
   }
 
+  const saveUploadStorage = async (e) => {
+    e.preventDefault()
+    setErr('')
+    setMsg('')
+    setSaving(true)
+    try {
+      const payload = { uploadDestination }
+      if (uploadDestination === 'smb') {
+        payload.smbHost = smbHost.trim()
+        payload.smbShare = smbShare.trim()
+        payload.smbPathPrefix = smbPathPrefix.trim()
+        payload.smbDomain = smbDomain.trim()
+        payload.smbUsername = smbUsername.trim()
+        if (smbPasswordInput.trim()) payload.smbPassword = smbPasswordInput.trim()
+      }
+      const res = await apiFetch('/api/admin/upload-storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await parseResponse(res)
+      if (!res.ok) throw new Error(toFriendlyError(res, data, 'Could not save upload destination.'))
+      if (data?.uploadDestination === 'smb') setUploadDestination('smb')
+      else setUploadDestination('dropbox')
+      if (typeof data?.smbHost === 'string') setSmbHost(data.smbHost)
+      if (typeof data?.smbShare === 'string') setSmbShare(data.smbShare)
+      if (typeof data?.smbPathPrefix === 'string') setSmbPathPrefix(data.smbPathPrefix)
+      if (typeof data?.smbDomain === 'string') setSmbDomain(data.smbDomain)
+      if (typeof data?.smbUsername === 'string') setSmbUsername(data.smbUsername)
+      setSmbPasswordSet(Boolean(data?.smbPasswordSet))
+      if (typeof data?.smbPassword === 'string' && data.smbPassword) setSmbPasswordInput(data.smbPassword)
+      else setSmbPasswordInput('')
+      setMsg('Guest export destination updated.')
+    } catch (err) {
+      setErr(err?.message || 'Could not save upload destination.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const clearSmbPassword = async () => {
+    if (!window.confirm('Clear the saved SMB password?')) return
+    setErr('')
+    setMsg('')
+    setSaving(true)
+    try {
+      const res = await apiFetch('/api/admin/upload-storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clearSmbPassword: true }),
+      })
+      const data = await parseResponse(res)
+      if (!res.ok) throw new Error(toFriendlyError(res, data, 'Could not clear SMB password.'))
+      setSmbPasswordSet(Boolean(data?.smbPasswordSet))
+      setSmbPasswordInput(data?.smbPassword && typeof data.smbPassword === 'string' ? data.smbPassword : '')
+      setMsg('SMB password cleared.')
+    } catch (e) {
+      setErr(e?.message || 'Could not clear SMB password.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const saveContentSettings = async (e) => {
     e.preventDefault()
     setErr('')
@@ -371,7 +460,7 @@ export function AdminSettingsPanel() {
     <section className="adminCard adminCard--light adminSettings">
       <h2 className="adminCard__title adminCard__title--small">Session settings</h2>
       <p className="adminCard__sub adminCard__sub--dark">
-        Branding, content rules, landing background, timer, admin panel password, and visitor site password.
+        Branding, content, landing background, guest export destination (Dropbox or SMB), timer, and passwords.
       </p>
       {loading ? <p className="adminGallery__loading">Loading settings…</p> : null}
       {err ? <p className="appError adminGallery__error">{err}</p> : null}
@@ -483,6 +572,130 @@ export function AdminSettingsPanel() {
             </button>
           </div>
         </div>
+
+        <form className="adminSettings__card" onSubmit={saveUploadStorage}>
+          <div className="adminSettings__cardHead">
+            <span className="adminSettings__badge adminSettings__badge--site">Export</span>
+            <p className="adminSettings__cardTitle">Guest design upload destination</p>
+          </div>
+          <p className="adminSettings__hint">
+            Where Adobe Express &quot;Export &amp; upload&quot; files are stored. Dropbox uses your existing API
+            credentials. SMB/CIFS uses the <code className="adminSettings__code">smbclient</code> command on the server
+            (install Samba client on Linux; see README for network constraints).
+          </p>
+          <label className="adminSettings__label" htmlFor="upload-destination">
+            Destination
+          </label>
+          <select
+            id="upload-destination"
+            className="adminSettings__input"
+            value={uploadDestination}
+            onChange={(e) => setUploadDestination(e.target.value)}
+            disabled={saving || loading || unsupported}
+          >
+            <option value="dropbox">Dropbox</option>
+            <option value="smb">SMB / CIFS (network share)</option>
+          </select>
+          {uploadDestination === 'smb' ? (
+            <>
+              <label className="adminSettings__label" htmlFor="smb-host">
+                Server (host or IP)
+              </label>
+              <input
+                id="smb-host"
+                className="adminSettings__input adminSettings__input--pw"
+                type="text"
+                autoComplete="off"
+                spellCheck="false"
+                value={smbHost}
+                onChange={(e) => setSmbHost(e.target.value)}
+                placeholder="fileserver.example.com"
+                disabled={saving || loading || unsupported}
+              />
+              <label className="adminSettings__label" htmlFor="smb-share">
+                Share name
+              </label>
+              <input
+                id="smb-share"
+                className="adminSettings__input adminSettings__input--pw"
+                type="text"
+                autoComplete="off"
+                spellCheck="false"
+                value={smbShare}
+                onChange={(e) => setSmbShare(e.target.value)}
+                placeholder="kiosk-uploads"
+                disabled={saving || loading || unsupported}
+              />
+              <label className="adminSettings__label" htmlFor="smb-path">
+                Folder inside share (optional)
+              </label>
+              <input
+                id="smb-path"
+                className="adminSettings__input adminSettings__input--pw"
+                type="text"
+                autoComplete="off"
+                spellCheck="false"
+                value={smbPathPrefix}
+                onChange={(e) => setSmbPathPrefix(e.target.value)}
+                placeholder="exports/guest"
+                disabled={saving || loading || unsupported}
+              />
+              <label className="adminSettings__label" htmlFor="smb-domain">
+                Domain (optional)
+              </label>
+              <input
+                id="smb-domain"
+                className="adminSettings__input"
+                type="text"
+                autoComplete="off"
+                spellCheck="false"
+                value={smbDomain}
+                onChange={(e) => setSmbDomain(e.target.value)}
+                placeholder="WORKGROUP"
+                disabled={saving || loading || unsupported}
+              />
+              <label className="adminSettings__label" htmlFor="smb-user">
+                Username
+              </label>
+              <input
+                id="smb-user"
+                className="adminSettings__input adminSettings__input--pw"
+                type="text"
+                autoComplete="off"
+                spellCheck="false"
+                value={smbUsername}
+                onChange={(e) => setSmbUsername(e.target.value)}
+                disabled={saving || loading || unsupported}
+              />
+              <label className="adminSettings__label" htmlFor="smb-pass">
+                Password {smbPasswordSet ? '(saved — enter new to change)' : ''}
+              </label>
+              <input
+                id="smb-pass"
+                className="adminSettings__input adminSettings__input--pw"
+                type="password"
+                autoComplete="new-password"
+                spellCheck="false"
+                value={smbPasswordInput}
+                onChange={(e) => setSmbPasswordInput(e.target.value)}
+                disabled={saving || loading || unsupported}
+              />
+              <div className="adminSettings__btnRow">
+                <button
+                  type="button"
+                  className="btn btn--adminSoft btn--small"
+                  disabled={saving || loading || unsupported || !smbPasswordSet}
+                  onClick={clearSmbPassword}
+                >
+                  Clear SMB password
+                </button>
+              </div>
+            </>
+          ) : null}
+          <button type="submit" className="btn btn--adminPrimary btn--small" disabled={saving || loading || unsupported}>
+            Save upload destination
+          </button>
+        </form>
 
         <form className="adminSettings__card" onSubmit={saveTimer}>
           <label className="adminSettings__label" htmlFor="session-seconds">

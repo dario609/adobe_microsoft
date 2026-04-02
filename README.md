@@ -41,7 +41,31 @@ npm run dev
 
 ### Backend environment variables (Render)
 
-#### Dropbox (required for upload)
+#### Guest export destination (Dropbox or SMB)
+
+The **admin panel** can set **Dropbox** (default) or **SMB/CIFS** under *Guest design upload destination*.  
+You can also force the mode with env (runtime JSON overrides env when set in admin):
+
+- **`UPLOAD_DESTINATION`**: `dropbox` (default) or `smb`
+
+**SMB / CIFS** (when `UPLOAD_DESTINATION=smb` or admin selects SMB):
+
+- **`SMB_HOST`** — file server hostname, IPv4, or bracketed IPv6
+- **`SMB_SHARE`** — share name (not a full UNC path)
+- **`SMB_PATH_PREFIX`** — optional folder inside the share, e.g. `exports/guest` (use `/`, no spaces)
+- **`SMB_USERNAME`**, **`SMB_PASSWORD`**
+- **`SMB_DOMAIN`** — optional (Windows domain / workgroup)
+- **`SMB_CLIENT_PATH`** — optional path to `smbclient` binary (default: `smbclient` on `PATH`)
+- **`SMB_UPLOAD_TIMEOUT_MS`** — optional (default `120000`)
+
+**Constraints for SMB:**
+
+- The **Node process must run where `smbclient` exists** (e.g. Debian/Ubuntu: `apt install smbclient`). Serverless platforms often **cannot** install this or reach private file servers.
+- The server needs **network reachability** to the SMB host (same LAN, VPN, or firewall rules). Many cloud hosts **block outbound SMB (445)**.
+- Credentials stored via admin are written to **`server/data/runtime-config.json`** (same pattern as other operator secrets) — prefer **`SMB_PASSWORD` in env** in production if you do not want the password in that file.
+- **Windows-only** servers without Samba tools would need a different implementation (e.g. mount share or native API).
+
+#### Dropbox (required when using Dropbox destination)
 
 - **`DROPBOX_APP_KEY`**
 - **`DROPBOX_APP_SECRET`**

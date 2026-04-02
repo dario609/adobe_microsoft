@@ -13,7 +13,8 @@ import {
   deleteLandingBackground,
   writeLandingBackground,
 } from '../utils/landingBackgroundStore.js'
-import { readRuntimeConfigOverrides } from '../utils/runtimeConfigStore.js'
+import { getUploadDestinationSettings } from '../utils/publicConfig.js'
+import { readRuntimeConfigOverrides, writeRuntimeConfigOverrides } from '../utils/runtimeConfigStore.js'
 import { listUploadHistory } from '../utils/uploadHistory.js'
 
 function rasterExtFromMime(m) {
@@ -112,6 +113,73 @@ export function createAdminRouter() {
   router.get('/admin/uploads', async (_req, res) => {
     const items = await listUploadHistory()
     res.json({ items })
+  })
+
+  /** Upload destination (Dropbox vs SMB) — requires admin when admin password is enabled. */
+  router.get('/admin/upload-storage', requireAdminGate, (_req, res) => {
+    const o = readRuntimeConfigOverrides()
+    const effective = getUploadDestinationSettings()
+    const pw =
+      o.smbPassword != null && String(o.smbPassword).length > 0
+        ? String(o.smbPassword)
+        : (process.env.SMB_PASSWORD || '')
+    res.json({
+      uploadDestination: effective.mode,
+      smbHost: o.smbHost ?? process.env.SMB_HOST ?? '',
+      smbShare: o.smbShare ?? process.env.SMB_SHARE ?? '',
+      smbPathPrefix: o.smbPathPrefix ?? process.env.SMB_PATH_PREFIX ?? '',
+      smbDomain: o.smbDomain ?? process.env.SMB_DOMAIN ?? '',
+      smbUsername: o.smbUsername ?? process.env.SMB_USERNAME ?? '',
+      smbPassword: pw,
+      smbPasswordSet: pw.length > 0,
+    })
+  })
+
+  router.post('/admin/upload-storage', requireAdminGate, (req, res) => {
+    const body = req.body && typeof req.body === 'object' ? req.body : {}
+    const patch = {}
+
+    if (body.uploadDestination === 'dropbox' || body.uploadDestination === 'smb') {
+      patch.uploadDestination = body.uploadDestination
+    } else if (body.uploadDestination != null) {
+      return res.status(400).json({ error: 'uploadDestination must be "dropbox" or "smb".' })
+    }
+
+    if (typeof body.smbHost === 'string') patch.smbHost = body.smbHost.trim().slice(0, 253)
+    if (typeof body.smbShare === 'string') patch.smbShare = body.smbShare.trim().slice(0, 80)
+    if (typeof body.smbPathPrefix === 'string') {
+      patch.smbPathPrefix = body.smbPathPrefix.trim().replace(/\\/g, '/').slice(0, 500)
+    }
+    if (typeof body.smbDomain === 'string') patch.smbDomain = body.smbDomain.trim().slice(0, 120)
+    if (typeof body.smbUsername === 'string') patch.smbUsername = body.smbUsername.trim().slice(0, 120)
+
+    if (body.clearSmbPassword === true) patch.smbPassword = ''
+    else if (typeof body.smbPassword === 'string' && body.smbPassword.trim()) {
+      patch.smbPassword = body.smbPassword.trim().slice(0, 500)
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return res.status(400).json({ error: 'No valid fields to save.' })
+    }
+
+    writeRuntimeConfigOverrides(patch)
+    const o = readRuntimeConfigOverrides()
+    const effective = getUploadDestinationSettings()
+    const pw =
+      o.smbPassword != null && String(o.smbPassword).length > 0
+        ? String(o.smbPassword)
+        : (process.env.SMB_PASSWORD || '')
+    return res.json({
+      ok: true,
+      uploadDestination: effective.mode,
+      smbHost: o.smbHost ?? process.env.SMB_HOST ?? '',
+      smbShare: o.smbShare ?? process.env.SMB_SHARE ?? '',
+      smbPathPrefix: o.smbPathPrefix ?? process.env.SMB_PATH_PREFIX ?? '',
+      smbDomain: o.smbDomain ?? process.env.SMB_DOMAIN ?? '',
+      smbUsername: o.smbUsername ?? process.env.SMB_USERNAME ?? '',
+      smbPassword: pw,
+      smbPasswordSet: pw.length > 0,
+    })
   })
 
   return router

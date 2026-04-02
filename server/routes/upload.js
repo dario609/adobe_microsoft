@@ -9,6 +9,8 @@ import {
   safeFilename,
   validateUploadFilenameField,
 } from '../utils/filename.js'
+import { getUploadDestinationSettings } from '../utils/publicConfig.js'
+import { buildSmbDisplayPath, uploadBufferViaSmb } from '../utils/smbUpload.js'
 import { runUploadWithIdempotency } from '../utils/idempotencyUpload.js'
 import { appendUploadHistory, listUploadHistory } from '../utils/uploadHistory.js'
 
@@ -19,6 +21,15 @@ const DROPBOX_NOT_READY_USER =
 /** For operators / logs / API clients (see /api/health). */
 const DROPBOX_NOT_READY_DETAIL =
   'Set DROPBOX_ACCESS_TOKEN, or DROPBOX_REFRESH_TOKEN + DROPBOX_APP_KEY + DROPBOX_APP_SECRET. For OAuth once: GET /api/oauth/dropbox/start (redirect URI must match Dropbox app settings).'
+
+const SMB_NOT_READY_USER =
+  'Saving to the network share is not set up on this server yet. Ask your administrator to configure SMB in the admin panel.'
+
+const SMB_NOT_READY_DETAIL =
+  'Set upload destination to SMB and provide host, share, username, and password (admin panel or SMB_* env vars). The server needs the smbclient binary and network access to the file server.'
+
+const SMB_UPLOAD_FAILED_USER =
+  'Could not save the file to the network share. Ask your administrator to verify SMB settings and connectivity.'
 
 const DROPBOX_TOKEN_EXPIRED_DETAIL =
   'The Dropbox access token expired. Prefer DROPBOX_REFRESH_TOKEN + DROPBOX_APP_KEY + DROPBOX_APP_SECRET (SDK refreshes automatically), or complete OAuth again and update .env.'
@@ -58,7 +69,7 @@ async function performUpload(req) {
 
   const baseName = safeFilename(req.body.filename)
   const filename = ensureImageExtension(baseName)
-  const dropboxPath = buildDropboxFilePath(filename)
+  const destination = getUploadDestinationSettings()
 
   const noop = process.env.LOAD_TEST_UPLOAD_NOOP === 'true'
   if (noop) {
@@ -66,18 +77,75 @@ async function performUpload(req) {
     if (delayMs > 0) {
       await new Promise((r) => setTimeout(r, delayMs))
     }
+    const displayPath =
+      destination.mode === 'smb'
+        ? buildSmbDisplayPath(
+            destination.smb.host || 'host',
+            destination.smb.share || 'share',
+            destination.smb.pathPrefix,
+            filename
+          )
+        : buildDropboxFilePath(filename)
     await appendUploadHistory({
       fileName: filename,
-      dropboxPath,
+      dropboxPath: displayPath,
       bytes: buffer.length,
       uploadedAt: new Date().toISOString(),
       loadTestNoop: true,
+      destination: destination.mode,
     })
     return {
       statusCode: 200,
-      body: { ok: true, path: dropboxPath, loadTestNoop: true },
+      body: { ok: true, path: displayPath, loadTestNoop: true, destination: destination.mode },
     }
   }
+
+  if (destination.mode === 'smb') {
+    const s = destination.smb
+    if (!s.host || !s.share || !s.username || !s.password) {
+      return {
+        statusCode: 503,
+        body: {
+          error: SMB_NOT_READY_USER,
+          code: 'SMB_NOT_CONFIGURED',
+          detail: SMB_NOT_READY_DETAIL,
+        },
+      }
+    }
+    const smbPath = buildSmbDisplayPath(s.host, s.share, s.pathPrefix, filename)
+    try {
+      await uploadBufferViaSmb({
+        buffer,
+        remoteBasename: filename,
+        host: s.host,
+        share: s.share,
+        pathPrefix: s.pathPrefix,
+        domain: s.domain || undefined,
+        username: s.username,
+        password: s.password,
+      })
+    } catch (err) {
+      console.error('SMB upload error:', err)
+      return {
+        statusCode: 502,
+        body: {
+          error: SMB_UPLOAD_FAILED_USER,
+          code: 'SMB_UPLOAD_FAILED',
+          detail: typeof err?.message === 'string' ? err.message : undefined,
+        },
+      }
+    }
+    await appendUploadHistory({
+      fileName: filename,
+      dropboxPath: smbPath,
+      bytes: buffer.length,
+      uploadedAt: new Date().toISOString(),
+      destination: 'smb',
+    })
+    return { statusCode: 200, body: { ok: true, path: smbPath, destination: 'smb' } }
+  }
+
+  const dropboxPath = buildDropboxFilePath(filename)
 
   const dbx = getDropboxClient()
   if (!dbx) {
@@ -131,9 +199,10 @@ async function performUpload(req) {
     dropboxPath,
     bytes: buffer.length,
     uploadedAt: new Date().toISOString(),
+    destination: 'dropbox',
   })
 
-  return { statusCode: 200, body: { ok: true, path: dropboxPath } }
+  return { statusCode: 200, body: { ok: true, path: dropboxPath, destination: 'dropbox' } }
 }
 
 export function createUploadRouter() {

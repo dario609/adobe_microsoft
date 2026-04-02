@@ -96,3 +96,39 @@ export function getPublicContentSettings() {
     submissionThankYouMessage,
   }
 }
+
+/**
+ * Where guest design exports are written (Dropbox API vs SMB/CIFS via smbclient).
+ * Runtime overrides env; password may come from SMB_PASSWORD env (not exposed to client).
+ */
+export function getUploadDestinationSettings() {
+  const overrides = readRuntimeConfigOverrides()
+  const envMode = String(process.env.UPLOAD_DESTINATION || '').trim().toLowerCase()
+  const raw =
+    overrides.uploadDestination != null && String(overrides.uploadDestination).trim() !== ''
+      ? String(overrides.uploadDestination).trim().toLowerCase()
+      : envMode
+  const mode = raw === 'smb' ? 'smb' : 'dropbox'
+
+  const pick = (key, envName) => {
+    const v = overrides[key]
+    if (v != null && String(v).trim() !== '') return String(v).trim()
+    return String(process.env[envName] || '').trim()
+  }
+
+  if (mode !== 'smb') {
+    return { mode: 'dropbox' }
+  }
+
+  return {
+    mode: 'smb',
+    smb: {
+      host: pick('smbHost', 'SMB_HOST'),
+      share: pick('smbShare', 'SMB_SHARE'),
+      pathPrefix: pick('smbPathPrefix', 'SMB_PATH_PREFIX'),
+      domain: pick('smbDomain', 'SMB_DOMAIN'),
+      username: pick('smbUsername', 'SMB_USERNAME'),
+      password: pick('smbPassword', 'SMB_PASSWORD'),
+    },
+  }
+}
