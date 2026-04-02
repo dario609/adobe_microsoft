@@ -57,7 +57,7 @@ function useLandingBackgroundStyle() {
         if (cancelled) return
         objectUrl = URL.createObjectURL(blob)
         setStyle({
-          backgroundImage: `linear-gradient(rgba(250, 250, 255, 0.88), rgba(250, 250, 255, 0.92)), url(${objectUrl})`,
+          backgroundImage: `url(${objectUrl})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',

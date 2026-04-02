@@ -471,9 +471,9 @@
   border-color: transparent;
   box-shadow:
     0 0 0 2px #ffffff,
-    0 0 0 4px #22c55e,
+    0 0 0 4px #dc2626,
     0 0 0 7px #ffffff,
-    0 0 0 9px #22c55e;
+    0 0 0 9px #dc2626;
 }
 
 .landGallery__img--pdf {
@@ -492,9 +492,9 @@
   border-color: transparent;
   box-shadow:
     0 0 0 2px #ffffff,
-    0 0 0 4px #22c55e,
+    0 0 0 4px #dc2626,
     0 0 0 7px #ffffff,
-    0 0 0 9px #22c55e;
+    0 0 0 9px #dc2626;
 }
 
 .landGallery__caption {
