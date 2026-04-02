@@ -348,18 +348,6 @@
   flex-shrink: 0;
 }
 
-.landHeader__title {
-  margin: 0;
-  font-size: clamp(1.9rem, 6vw, 2.5rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
-  background: linear-gradient(92deg, #ef4444 0%, #f97316 26%, #a855f7 58%, #2563eb 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
 /* ——— Landing hero ——— */
 .landHero {
   border: none;
