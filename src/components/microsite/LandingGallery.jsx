@@ -68,6 +68,7 @@ export function LandingGallery({ onSelectionChange }) {
                   className={`landGallery__pick${active ? ' landGallery__pick--active' : ''}`}
                   onClick={() => pick(it)}
                   aria-pressed={active}
+                  aria-label={displayName(it)}
                 >
                   {isPdf ? (
                     <span className="landGallery__img landGallery__img--pdf" aria-hidden>
@@ -76,7 +77,6 @@ export function LandingGallery({ onSelectionChange }) {
                   ) : (
                     <img className="landGallery__img" src={src} alt="" loading="lazy" />
                   )}
-                  <span className="landGallery__caption">{displayName(it)}</span>
                 </button>
               </li>
             )

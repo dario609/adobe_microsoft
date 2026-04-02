@@ -501,17 +501,6 @@
     0 0 0 9px #dc2626;
 }
 
-.landGallery__caption {
-  display: block;
-  font-size: 0.875rem;
-  line-height: 1.35;
-  font-weight: 600;
-  color: #0f172a;
-  -webkit-text-fill-color: #0f172a;
-  word-break: break-word;
-  max-width: 140px;
-}
-
 /* ——— Session header (logo + Leave + themed timer + Finish) ——— */
 .sessionHeader {
   flex-shrink: 0;
