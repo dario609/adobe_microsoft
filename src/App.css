@@ -1,5 +1,7 @@
 /* ——— App shell ——— */
 :root {
+  /* Shared corner radius for buttons and button-like controls */
+  --btn-action-radius: 14px;
   /* Centered editor column — wide on large screens, modest side gutters */
   --editor-boundary-max: min(1680px, calc(100vw - 1.25rem));
   /* Rainbow ring around the Express host (gradient = padding). */
@@ -707,7 +709,7 @@
   align-items: center;
   justify-content: center;
   padding: 10px 18px;
-  border-radius: 12px;
+  border-radius: var(--btn-action-radius);
   border: 1px solid #1d4ed8;
   font: inherit;
   font-weight: 600;
@@ -734,7 +736,7 @@
   align-items: center;
   justify-content: center;
   padding: 10px 18px;
-  border-radius: 12px;
+  border-radius: var(--btn-action-radius);
   border: 1px solid #2563eb;
   font: inherit;
   font-weight: 600;
@@ -762,7 +764,7 @@
   align-items: center;
   justify-content: center;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: var(--btn-action-radius);
   border: 1px solid #cbd5e1;
   font: inherit;
   font-weight: 600;
@@ -788,7 +790,7 @@
   align-items: center;
   justify-content: center;
   padding: 8px 12px;
-  border-radius: 12px;
+  border-radius: var(--btn-action-radius);
   border: 1px solid #fecaca;
   font: inherit;
   font-weight: 600;
@@ -885,7 +887,7 @@
   align-items: center;
   justify-content: center;
   padding: 10px 16px;
-  border-radius: 10px;
+  border-radius: var(--btn-action-radius);
   border: 1px solid transparent;
   background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
   color: #ffffff;
@@ -1359,7 +1361,7 @@
   flex-shrink: 0;
   padding: 10px 18px;
   border: 2px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--btn-action-radius);
   font: inherit;
   font-size: 0.875rem;
   font-weight: 600;
@@ -1454,7 +1456,7 @@
   min-width: 5.5rem;
   padding: 0 16px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--btn-action-radius);
   font: inherit;
   font-size: 0.9375rem;
   font-weight: 600;
@@ -1590,7 +1592,7 @@
   justify-content: center;
   font: inherit;
   padding: 12px 20px;
-  border-radius: 10px;
+  border-radius: var(--btn-action-radius);
   border: 1px solid transparent;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -1758,6 +1760,15 @@
   backdrop-filter: blur(4px);
 }
 
+.modalRoot--thanks .modalRoot__scrim {
+  background:
+    radial-gradient(ellipse 130% 90% at 50% 18%, rgba(34, 197, 94, 0.18), transparent 52%),
+    radial-gradient(ellipse 100% 70% at 50% 100%, rgba(37, 99, 235, 0.14), transparent 48%),
+    rgba(15, 23, 42, 0.42);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
 .modalCard {
   position: relative;
   width: 100%;
@@ -1778,6 +1789,86 @@
   box-shadow:
     0 1px 2px rgba(15, 23, 42, 0.04),
     0 24px 48px -12px rgba(15, 23, 42, 0.18);
+}
+
+.modalCard--thanks {
+  max-width: 340px;
+  padding: 20px 22px 22px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, #22c55e 35%, #e5e7eb);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fdf9 100%);
+  box-shadow:
+    0 1px 2px rgba(34, 197, 94, 0.08),
+    0 20px 40px -14px rgba(15, 23, 42, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+  animation: modalThanksEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modalCard--thanks {
+    animation: none;
+  }
+}
+
+@keyframes modalThanksEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modalCard__thanksBadge {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 12px;
+}
+
+.modalCard__thanksBadgeSvg {
+  width: 56px;
+  height: 56px;
+  display: block;
+  filter: drop-shadow(0 6px 14px rgba(34, 197, 94, 0.35));
+  animation: modalThanksBadge 0.65s cubic-bezier(0.34, 1.3, 0.64, 1) 0.08s both;
+}
+
+.modalCard__thanksBadgeCircle {
+  fill: #16a34a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modalCard__thanksBadgeSvg {
+    animation: none;
+  }
+}
+
+@keyframes modalThanksBadge {
+  from {
+    opacity: 0;
+    transform: scale(0.5) rotate(-18deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.modalCard__title--thanks {
+  text-align: center;
+  font-size: 1.2rem;
+  letter-spacing: -0.03em;
+  margin-bottom: 10px;
+  color: #0f172a;
+}
+
+.modalCard__hint--thanks {
+  text-align: center;
+  margin-bottom: 18px;
+  line-height: 1.5;
+  color: #475569;
 }
 
 .modalCard--pickup .modalCard__title {
@@ -1849,6 +1940,10 @@
 
 .modalCard--confirm {
   max-width: 360px;
+}
+
+.modalCard--confirm.modalCard--thanks {
+  max-width: 340px;
 }
 
 .modalCard__row--stack {
