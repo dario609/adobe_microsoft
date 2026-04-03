@@ -14,6 +14,7 @@ import { NoticeBanner } from './components/microsite/NoticeBanner.jsx'
 import { SessionHeader } from './components/microsite/SessionHeader.jsx'
 import { SitePasswordGate } from './components/microsite/SitePasswordGate.jsx'
 import { IOSExpressNotice } from './components/microsite/IOSExpressNotice.jsx'
+import { SiteLegalFooter } from './components/microsite/SiteLegalFooter.jsx'
 import { UploadOverlay } from './components/microsite/UploadOverlay.jsx'
 import { useRuntimeConfig } from './hooks/useRuntimeConfig.js'
 import { useMicrositeWorkflow } from './hooks/useMicrositeWorkflow.js'
@@ -44,15 +45,29 @@ export default function App() {
   return <MicrositeRoutes />
 }
 
+function defaultPublicBackgroundStyle() {
+  const href = `${import.meta.env.BASE_URL}background.jpeg`
+  return {
+    backgroundImage: `url("${href}")`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+  }
+}
+
 function useLandingBackgroundStyle() {
-  const [style, setStyle] = useState(undefined)
+  const [style, setStyle] = useState(() => defaultPublicBackgroundStyle())
   useEffect(() => {
     let cancelled = false
     let objectUrl = ''
     ;(async () => {
       try {
         const res = await fetch(apiUrl('/api/branding/landing-background'), { cache: 'no-store' })
-        if (!res.ok || cancelled) return
+        if (cancelled) return
+        if (!res.ok) {
+          setStyle(defaultPublicBackgroundStyle())
+          return
+        }
         const blob = await res.blob()
         if (cancelled) return
         objectUrl = URL.createObjectURL(blob)
@@ -63,7 +78,7 @@ function useLandingBackgroundStyle() {
           backgroundRepeat: 'no-repeat',
         })
       } catch {
-        if (!cancelled) setStyle(undefined)
+        if (!cancelled) setStyle(defaultPublicBackgroundStyle())
       }
     })()
     return () => {
@@ -146,6 +161,7 @@ function MicrositeRoutes() {
           />
         ) : null}
       </div>
+      <SiteLegalFooter />
     </div>
   )
 }
