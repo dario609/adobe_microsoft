@@ -165,16 +165,20 @@ export function useMicrositeWorkflow() {
             await resetForNextUser()
           },
           onPublish: async (_intent, publishParams) => {
+            /** Adobe Embed SDK v4 expects PublishStatus or it reads `.status` on undefined (TypeError). */
+            const deny = () => ({ status: 'DENIED' })
+            const ok = () => ({ status: 'SUCCESS' })
+
             const base = pickupBaseNameRef.current
             if (!base?.trim()) {
               setError('Pickup name is missing. Use Finish to enter your name, then Export & upload.')
-              return
+              return deny()
             }
 
             const payload = getPublishAssetPayload(publishParams)
             if (!payload) {
               setError('No export yet. In Adobe Express, tap Export & upload.')
-              return
+              return deny()
             }
 
             const filename = buildPickupExportFilename(base)
@@ -185,9 +189,11 @@ export function useMicrositeWorkflow() {
               const blob = await blobFromAdobeExport(payload)
               await uploadDesignToServer(blob, filename)
               setShowSubmissionThanks(true)
+              return ok()
             } catch (e) {
               console.error('Publish/upload:', e, publishParams)
               setError(friendlyExportFailure(e?.message || String(e)))
+              return deny()
             } finally {
               setUploadBusy(false)
             }

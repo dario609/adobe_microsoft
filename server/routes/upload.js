@@ -113,6 +113,17 @@ async function performUpload(req) {
       }
     }
     const smbPath = buildSmbDisplayPath(s.host, s.share, s.pathPrefix, filename)
+    const uploadDebug = process.env.UPLOAD_DEBUG === 'true' || process.env.UPLOAD_DEBUG === '1'
+    if (uploadDebug) {
+      console.info('[upload debug] SMB attempt', {
+        host: s.host,
+        share: s.share,
+        pathPrefix: s.pathPrefix || '(root)',
+        domain: s.domain || '(none)',
+        username: s.username,
+        remoteFile: filename,
+      })
+    }
     try {
       await uploadBufferViaSmb({
         buffer,
@@ -125,13 +136,17 @@ async function performUpload(req) {
         password: s.password,
       })
     } catch (err) {
+      const detail = typeof err?.message === 'string' ? err.message : undefined
       console.error('SMB upload error:', err)
+      if (uploadDebug) {
+        console.info('[upload debug] SMB failed', { code: 'SMB_UPLOAD_FAILED', detail })
+      }
       return {
         statusCode: 502,
         body: {
           error: SMB_UPLOAD_FAILED_USER,
           code: 'SMB_UPLOAD_FAILED',
-          detail: typeof err?.message === 'string' ? err.message : undefined,
+          detail,
         },
       }
     }

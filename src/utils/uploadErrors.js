@@ -4,6 +4,8 @@
 export function friendlyUploadFailure(res, data) {
   const msg = typeof data?.error === 'string' ? data.error : ''
   if (res.status === 502) {
+    // Backend uses 502 for SMB failures; Vercel proxy also uses 502 when the API is unreachable.
+    if (msg) return msg
     return 'Could not reach the save service. Check that the app server is running.'
   }
   if (res.status === 503 && data?.code === 'DROPBOX_NOT_CONFIGURED') {
