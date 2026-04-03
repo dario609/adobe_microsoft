@@ -53,10 +53,10 @@ export function SitePasswordGate() {
             <button type="submit" className="btn btn--primary btn--large" disabled={busy}>
               {busy ? 'Signing in…' : 'Continue'}
             </button>
+            <SiteLegalFooter />
           </form>
         </div>
       </div>
-      <SiteLegalFooter />
     </>
   )
 }

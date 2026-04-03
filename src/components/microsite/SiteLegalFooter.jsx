@@ -1,5 +1,6 @@
 import { PRIVACY_TERMS_LABEL, PRIVACY_TERMS_URL } from '../../constants/config.js'
 
+/** In-flow legal link for use inside a card (landing below Start, password gate below Continue). */
 export function SiteLegalFooter() {
   return (
     <footer className="siteLegalFooter">

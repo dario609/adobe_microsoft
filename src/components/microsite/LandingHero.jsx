@@ -1,4 +1,5 @@
 import { LandingGallery } from './LandingGallery.jsx'
+import { SiteLegalFooter } from './SiteLegalFooter.jsx'
 
 export function LandingHero({
   status,
@@ -22,6 +23,7 @@ export function LandingHero({
         >
           {startLabel}
         </button>
+        <SiteLegalFooter />
       </div>
       <p
         className={`landHero__status${status === 'ready' || status === 'loading' ? ' landHero__status--center' : ''}`}

@@ -14,7 +14,6 @@ import { NoticeBanner } from './components/microsite/NoticeBanner.jsx'
 import { SessionHeader } from './components/microsite/SessionHeader.jsx'
 import { SitePasswordGate } from './components/microsite/SitePasswordGate.jsx'
 import { IOSExpressNotice } from './components/microsite/IOSExpressNotice.jsx'
-import { SiteLegalFooter } from './components/microsite/SiteLegalFooter.jsx'
 import { UploadOverlay } from './components/microsite/UploadOverlay.jsx'
 import { useRuntimeConfig } from './hooks/useRuntimeConfig.js'
 import { useMicrositeWorkflow } from './hooks/useMicrositeWorkflow.js'
@@ -161,7 +160,6 @@ function MicrositeRoutes() {
           />
         ) : null}
       </div>
-      <SiteLegalFooter />
     </div>
   )
 }
