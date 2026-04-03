@@ -23,7 +23,6 @@ export function LandingHero({
         >
           {startLabel}
         </button>
-        <SiteLegalFooter />
       </div>
       <p
         className={`landHero__status${status === 'ready' || status === 'loading' ? ' landHero__status--center' : ''}`}
@@ -37,6 +36,7 @@ export function LandingHero({
           </span>
         )}
       </p>
+      <SiteLegalFooter />
     </section>
   )
 }
