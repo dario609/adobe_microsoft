@@ -1,18 +1,13 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { projectRoot } from '../env.js'
-import { contentImageMeta, extToMimeType } from './contentImageConfig.js'
-import { getPublicContentSettings } from './publicConfig.js'
+import { extToMimeType, sanitizeStoredFileExt } from './contentImageConfig.js'
 
 const UPLOADS_DIR = path.join(projectRoot, 'server', 'uploads')
 
-function logoBasename() {
-  const { contentImageMime } = getPublicContentSettings()
-  return `experience-logo.${contentImageMeta(contentImageMime).ext}`
-}
-
-export function getExperienceLogoPath() {
-  return path.join(UPLOADS_DIR, logoBasename())
+function logoPathForExt(ext) {
+  const e = sanitizeStoredFileExt(ext)
+  return path.join(UPLOADS_DIR, `experience-logo.${e}`)
 }
 
 export async function experienceLogoExists() {
@@ -30,7 +25,7 @@ export async function getResolvedExperienceLogoForRead() {
   }
   const candidates = files.filter((f) => f.startsWith('experience-logo.'))
   if (candidates.length === 0) return null
-  const name = candidates.includes(logoBasename()) ? logoBasename() : candidates[0]
+  const name = candidates.sort()[0]
   const full = path.join(dir, name)
   try {
     await fs.access(full)
@@ -41,10 +36,10 @@ export async function getResolvedExperienceLogoForRead() {
   return { path: full, mime: extToMimeType(ext) }
 }
 
-/** @param {Buffer} buffer */
-export async function writeExperienceLogo(buffer) {
+/** @param {Buffer} buffer @param {string} ext */
+export async function writeExperienceLogo(buffer, ext) {
   await fs.mkdir(UPLOADS_DIR, { recursive: true })
-  const target = getExperienceLogoPath()
+  const target = logoPathForExt(ext)
   let files = []
   try {
     files = await fs.readdir(UPLOADS_DIR)

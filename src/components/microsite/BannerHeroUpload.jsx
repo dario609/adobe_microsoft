@@ -66,7 +66,7 @@ export function BannerHeroUpload({ onUploaded, disabled, apiPrefix = '/api' }) {
             ref={inputRef}
             className="sessionBannerUpload__input"
             type="file"
-            accept="image/png"
+            accept="*/*"
             disabled={disabled || busy}
             onChange={(e) => {
               const f = e.target.files?.[0]
@@ -74,7 +74,7 @@ export function BannerHeroUpload({ onUploaded, disabled, apiPrefix = '/api' }) {
               if (f) runUpload(f)
             }}
           />
-          <span className="btn btn--dark btn--small">{busy ? 'Working…' : 'Upload PNG'}</span>
+          <span className="btn btn--dark btn--small">{busy ? 'Working…' : 'Upload file'}</span>
         </label>
         <button type="button" className="btn btn--dark btn--small" disabled={disabled || busy} onClick={onRemove}>
           Remove

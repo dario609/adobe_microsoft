@@ -1,10 +1,26 @@
 /**
  * Short, user-facing copy for upload / network failures.
  */
+const DETAIL_MAX = 600
+
+function appendDetail(base, detail) {
+  const d = typeof detail === 'string' ? detail.trim() : ''
+  if (!d) return base
+  const short = d.length > DETAIL_MAX ? `${d.slice(0, DETAIL_MAX)}…` : d
+  return `${base}\n\nDetails: ${short}`
+}
+
 export function friendlyUploadFailure(res, data) {
   const msg = typeof data?.error === 'string' ? data.error : ''
   if (res.status === 502) {
-    // Backend uses 502 for SMB failures; Vercel proxy also uses 502 when the API is unreachable.
+    // SMB failure: backend sends code + smbclient stderr in `detail`.
+    if (data?.code === 'SMB_UPLOAD_FAILED') {
+      return appendDetail(
+        msg || 'Could not save the file to the network share. Ask your administrator to verify SMB settings and connectivity.',
+        data?.detail
+      )
+    }
+    // Vercel proxy / bad gateway when API is unreachable.
     if (msg) return msg
     return 'Could not reach the save service. Check that the app server is running.'
   }

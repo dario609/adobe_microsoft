@@ -16,9 +16,9 @@ export function RuntimeConfigProvider({ children }) {
   const [siteAuthOk, setSiteAuthOk] = useState(false)
   const [adminPasswordRequired, setAdminPasswordRequired] = useState(false)
   const [adminAuthOk, setAdminAuthOk] = useState(false)
-  const [contentImageMime, setContentImageMime] = useState('image/png')
-  const [contentImageAccept, setContentImageAccept] = useState('.png,image/png')
-  const [contentImageLabel, setContentImageLabel] = useState('PNG')
+  const [contentImageMime, setContentImageMime] = useState('*/*')
+  const [contentImageAccept, setContentImageAccept] = useState('*/*')
+  const [contentImageLabel, setContentImageLabel] = useState('All formats')
   const [submissionThankYouMessage, setSubmissionThankYouMessage] = useState('')
 
   const refreshAuth = useCallback(async () => {

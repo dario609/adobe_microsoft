@@ -1,77 +1,83 @@
 /**
- * Allowed upload types for gallery, banner, experience logo (operators choose in admin).
- * PDF standard vs print share MIME `application/pdf` (operator-facing labels only).
+ * Gallery, banner, experience logo, and landing background uploads accept any file type.
+ * Stored extension is taken from the original filename when safe, otherwise inferred from MIME.
  */
+import path from 'node:path'
 
-const ALLOWED = {
-  'image/png': { ext: 'png', accept: '.png,image/png', label: 'PNG' },
-  'image/jpeg': { ext: 'jpg', accept: '.jpg,.jpeg,image/jpeg', label: 'JPEG' },
-  'image/webp': { ext: 'webp', accept: '.webp,image/webp', label: 'WebP' },
-  'application/pdf-standard': {
-    ext: 'pdf',
-    accept: '.pdf,application/pdf',
-    label: 'PDF (standard)',
-    fileMime: 'application/pdf',
-  },
-  'application/pdf-print': {
-    ext: 'pdf',
-    accept: '.pdf,application/pdf',
-    label: 'PDF (print)',
-    fileMime: 'application/pdf',
-  },
+const MIME_TO_EXT = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+  'image/svg+xml': 'svg',
+  'image/avif': 'avif',
+  'image/bmp': 'bmp',
+  'image/x-icon': 'ico',
+  'image/vnd.microsoft.icon': 'ico',
+  'application/pdf': 'pdf',
 }
 
-const DEFAULT_MIME = 'image/png'
-
-/** @param {unknown} mime */
-export function normalizeContentImageMime(mime) {
-  const s = String(mime || '').trim().toLowerCase()
-  if (s === 'image/jpg') return 'image/jpeg'
-  if (s === 'application/pdf') return 'application/pdf-standard'
-  if (Object.prototype.hasOwnProperty.call(ALLOWED, s)) return s
-  return DEFAULT_MIME
-}
-
-export function getAllowedContentImageMimes() {
-  return Object.keys(ALLOWED)
-}
-
-/** Env fallback when runtime override is null */
-export function getContentImageMimeFromEnv() {
-  const raw = process.env.CONTENT_IMAGE_MIME?.trim() || process.env.GALLERY_IMAGE_MIME?.trim() || ''
-  return normalizeContentImageMime(raw || DEFAULT_MIME)
+/** @param {string} ext */
+export function sanitizeStoredFileExt(ext) {
+  const x = String(ext || 'bin').toLowerCase().replace(/^\./, '')
+  if (!/^[a-z0-9]{1,16}$/.test(x)) return 'bin'
+  if (x === 'jpeg') return 'jpg'
+  return x
 }
 
 /**
- * @param {string | null | undefined} overrideMime — from runtime-config.json
+ * Multer file: { mimetype, originalname }
+ * @param {{ mimetype?: string, originalname?: string }} file
  */
-export function resolveContentImageMime(overrideMime) {
-  if (overrideMime != null && String(overrideMime).trim() !== '') {
-    return normalizeContentImageMime(overrideMime)
+export function inferStoredExtFromUpload(file) {
+  const name = String(file?.originalname || '')
+  let ext = path.extname(name).toLowerCase().replace(/^\./, '')
+  if (ext === 'jpeg') ext = 'jpg'
+  if (ext) return sanitizeStoredFileExt(ext)
+
+  const mt = String(file?.mimetype || '').trim().toLowerCase()
+  if (MIME_TO_EXT[mt]) return MIME_TO_EXT[mt]
+  if (mt.startsWith('image/')) {
+    const sub = mt.slice(6).replace(/[^a-z0-9]/gi, '').slice(0, 12)
+    return sanitizeStoredFileExt(sub || 'img')
   }
-  return getContentImageMimeFromEnv()
+  if (mt.startsWith('video/')) {
+    const sub = mt.slice(6).replace(/[^a-z0-9]/gi, '').slice(0, 12)
+    return sanitizeStoredFileExt(sub || 'vid')
+  }
+  if (mt.startsWith('audio/')) {
+    const sub = mt.slice(6).replace(/[^a-z0-9]/gi, '').slice(0, 12)
+    return sanitizeStoredFileExt(sub || 'aud')
+  }
+  if (mt === 'application/pdf' || mt.endsWith('+json') || mt.startsWith('text/')) {
+    if (mt === 'application/pdf') return 'pdf'
+    const sub = mt.split('/').pop()?.replace(/[^a-z0-9]/gi, '').slice(0, 12)
+    return sanitizeStoredFileExt(sub || 'dat')
+  }
+  return 'bin'
 }
 
-export function contentImageMeta(mime) {
-  const m = normalizeContentImageMime(mime)
-  return ALLOWED[m] || ALLOWED[DEFAULT_MIME]
-}
-
-export function mimeMatchesContentPolicy(fileMime, policyMime) {
-  const wantKey = normalizeContentImageMime(policyMime)
-  const meta = ALLOWED[wantKey]
-  if (!meta) return false
-  const expected = meta.fileMime || wantKey
-  const got = String(fileMime || '').trim().toLowerCase()
-  if (got === 'image/jpg') return expected === 'image/jpeg'
-  return got === expected
-}
-
-/** @param {string} ext — stored file extension */
+/** @param {string} ext — stored file extension (no dot) */
 export function extToMimeType(ext) {
-  const e = String(ext || 'png').toLowerCase()
-  if (e === 'jpg' || e === 'jpeg') return 'image/jpeg'
-  if (e === 'webp') return 'image/webp'
-  if (e === 'pdf') return 'application/pdf'
-  return 'image/png'
+  const e = sanitizeStoredFileExt(ext)
+  const table = {
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    webp: 'image/webp',
+    gif: 'image/gif',
+    svg: 'image/svg+xml',
+    avif: 'image/avif',
+    bmp: 'image/bmp',
+    ico: 'image/x-icon',
+    pdf: 'application/pdf',
+    json: 'application/json',
+    txt: 'text/plain',
+    html: 'text/html',
+    css: 'text/css',
+    js: 'text/javascript',
+  }
+  if (table[e]) return table[e]
+  return 'application/octet-stream'
 }

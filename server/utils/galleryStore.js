@@ -2,8 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import crypto from 'node:crypto'
 import { projectRoot } from '../env.js'
-import { contentImageMeta } from './contentImageConfig.js'
-import { getPublicContentSettings } from './publicConfig.js'
+import { sanitizeStoredFileExt } from './contentImageConfig.js'
 
 const GALLERY_DIR = path.join(projectRoot, 'server', 'uploads', 'gallery')
 const MANIFEST = path.join(GALLERY_DIR, 'manifest.json')
@@ -14,10 +13,7 @@ async function ensureDir() {
 
 /** @param {string | undefined} ext */
 export function normalizeStoredExt(ext) {
-  const x = String(ext || 'png').toLowerCase()
-  if (x === 'jpeg' || x === 'jpg') return 'jpg'
-  if (x === 'webp') return 'webp'
-  return 'png'
+  return sanitizeStoredFileExt(ext)
 }
 
 async function readManifest() {
@@ -94,12 +90,11 @@ export async function listGalleryItems() {
   return readManifest()
 }
 
-/** @param {Buffer} buffer @param {{ originalName: string, bytes: number, templateId?: string }} meta */
+/** @param {Buffer} buffer @param {{ originalName: string, bytes: number, templateId?: string, fileExt: string }} meta */
 export async function addGalleryPng(buffer, meta) {
   await ensureDir()
   const id = crypto.randomUUID()
-  const { contentImageMime } = getPublicContentSettings()
-  const ext = contentImageMeta(contentImageMime).ext
+  const ext = normalizeStoredExt(meta.fileExt)
   const p = getGalleryBlobPath(id, ext)
   if (!p) throw new Error('Invalid id')
   const originalName = displayKey(meta.originalName ?? 'image.png')
@@ -186,7 +181,7 @@ export async function updateGalleryItem(id, patch) {
   return next
 }
 
-export async function replaceGalleryPng(id, buffer) {
+export async function replaceGalleryPng(id, buffer, newExt) {
   const items = await readManifest()
   const idx = items.findIndex((x) => x.id === id)
   if (idx < 0) return null
@@ -197,10 +192,9 @@ export async function replaceGalleryPng(id, buffer) {
     throw err
   }
   const oldExt = normalizeStoredExt(cur.fileExt)
-  const { contentImageMime } = getPublicContentSettings()
-  const newExt = contentImageMeta(contentImageMime).ext
+  const nextExt = normalizeStoredExt(newExt)
   const oldPath = getGalleryBlobPath(id, oldExt)
-  const newPath = getGalleryBlobPath(id, newExt)
+  const newPath = getGalleryBlobPath(id, nextExt)
   await ensureDir()
   try {
     await fs.unlink(oldPath)
@@ -219,7 +213,7 @@ export async function replaceGalleryPng(id, buffer) {
     ...cur,
     bytes: buffer.length,
     uploadedAt: new Date().toISOString(),
-    fileExt: newExt,
+    fileExt: nextExt,
   }
   items[idx] = next
   await writeManifest(items)

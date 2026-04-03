@@ -1,32 +1,37 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { projectRoot } from '../env.js'
-import { contentImageMeta, extToMimeType } from './contentImageConfig.js'
-import { getPublicContentSettings } from './publicConfig.js'
+import { extToMimeType, sanitizeStoredFileExt } from './contentImageConfig.js'
 
 const UPLOADS_DIR = path.join(projectRoot, 'server', 'uploads')
 const LEGACY_BANNER = path.join(UPLOADS_DIR, 'session-banner.png')
-
-/** Path for new uploads under current content-image policy. */
-export function getBannerPath() {
-  const { contentImageMime } = getPublicContentSettings()
-  const ext = contentImageMeta(contentImageMime).ext
-  return path.join(UPLOADS_DIR, `session-banner.${ext}`)
-}
 
 export async function ensureUploadsDir() {
   await fs.mkdir(UPLOADS_DIR, { recursive: true })
 }
 
-/** Prefer current policy file; fall back to legacy fixed PNG name. */
+function bannerPathForExt(ext) {
+  const e = sanitizeStoredFileExt(ext)
+  return path.join(UPLOADS_DIR, `session-banner.${e}`)
+}
+
 export async function getResolvedBannerForRead() {
-  const primary = getBannerPath()
+  let files = []
   try {
-    await fs.access(primary)
-    const ext = path.extname(primary).replace(/^\./, '') || 'png'
-    return { path: primary, mime: extToMimeType(ext) }
+    files = await fs.readdir(UPLOADS_DIR)
   } catch {
-    /* try legacy */
+    return null
+  }
+  const hit = files.find((f) => f.startsWith('session-banner.'))
+  if (hit) {
+    const full = path.join(UPLOADS_DIR, hit)
+    try {
+      await fs.access(full)
+    } catch {
+      return null
+    }
+    const ext = path.extname(hit).replace(/^\./, '') || 'png'
+    return { path: full, mime: extToMimeType(ext) }
   }
   try {
     await fs.access(LEGACY_BANNER)
@@ -41,10 +46,10 @@ export async function bannerExists() {
   return r != null
 }
 
-/** @param {Buffer} buffer */
-export async function writeBannerPng(buffer) {
+/** @param {Buffer} buffer @param {string} ext — from uploaded file */
+export async function writeBannerPng(buffer, ext) {
   await ensureUploadsDir()
-  const target = getBannerPath()
+  const target = bannerPathForExt(ext)
   let files = []
   try {
     files = await fs.readdir(UPLOADS_DIR)

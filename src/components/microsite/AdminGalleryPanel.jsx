@@ -4,7 +4,6 @@ import { apiFetch } from '../../api/apiFetch.js'
 import { apiUrl } from '../../api/apiBase.js'
 import { useRuntimeConfig } from '../../hooks/useRuntimeConfig.js'
 import { validateGalleryDraftLocal } from '../../utils/galleryDisplay.js'
-import { fileMatchesContentPolicy } from '../../utils/contentUploadPolicy.js'
 
 async function parseJson(res) {
   const ct = res.headers.get('content-type') || ''
@@ -47,7 +46,7 @@ function apiFailureMessage(res, data, op = 'load') {
 }
 
 export function AdminGalleryPanel() {
-  const { contentImageAccept, contentImageLabel, contentImageMime } = useRuntimeConfig()
+  const { contentImageAccept } = useRuntimeConfig()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -118,13 +117,8 @@ export function AdminGalleryPanel() {
     return apiFailureMessage(res, data, 'upload') || `Upload failed (${res.status}).`
   }
 
-  /** Upload one file (type enforced in Session settings). */
+  /** Upload one file (any type). */
   const uploadOne = async (file) => {
-    if (!fileMatchesContentPolicy(file, contentImageMime)) {
-      throw new Error(
-        `This file does not match the allowed type (${contentImageLabel}). Choose another file or update Content settings.`
-      )
-    }
     const fd = new FormData()
     fd.append('images', file)
     const tid = uploadTemplateId.trim()
@@ -162,14 +156,6 @@ export function AdminGalleryPanel() {
     if (!tid) {
       setActionError('Enter the template ID above before uploading — it is required for every image.')
       return
-    }
-    for (const f of files) {
-      if (!fileMatchesContentPolicy(f, contentImageMime)) {
-        setActionError(
-          `Files must match the allowed type (${contentImageLabel}). Remove files that do not match.`
-        )
-        return
-      }
     }
     setActionError('')
     setBusy(true)
@@ -257,12 +243,6 @@ export function AdminGalleryPanel() {
   }
 
   const replacePng = async (id, file) => {
-    if (!fileMatchesContentPolicy(file, contentImageMime)) {
-      setActionError(
-        `File must match the allowed type (${contentImageLabel}). Update Content settings or choose another file.`
-      )
-      return
-    }
     setActionError('')
     setBusy(true)
     try {
@@ -333,7 +313,7 @@ export function AdminGalleryPanel() {
             />
           </div>
           <label className="btn btn--adminPrimary btn--small adminGallery__fileLabel">
-            {busy ? 'Working…' : `Upload ${contentImageLabel}`}
+            {busy ? 'Working…' : 'Upload files'}
             <input
               className="adminGallery__fileInput"
               type="file"

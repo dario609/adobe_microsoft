@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { projectRoot } from '../env.js'
-import { extToMimeType } from './contentImageConfig.js'
+import { extToMimeType, sanitizeStoredFileExt } from './contentImageConfig.js'
 
 const UPLOADS_DIR = path.join(projectRoot, 'server', 'uploads')
 
@@ -24,10 +24,10 @@ export async function getResolvedLandingBackgroundForRead() {
   return { path: full, mime: extToMimeType(ext) }
 }
 
-/** @param {Buffer} buffer @param {'png'|'jpg'|'webp'} ext */
+/** @param {Buffer} buffer @param {string} ext */
 export async function writeLandingBackground(buffer, ext) {
   await fs.mkdir(UPLOADS_DIR, { recursive: true })
-  const e = ext === 'jpg' || ext === 'jpeg' ? 'jpg' : ext === 'webp' ? 'webp' : 'png'
+  const e = sanitizeStoredFileExt(ext)
   const target = path.join(UPLOADS_DIR, `landing-background.${e}`)
   let files = []
   try {

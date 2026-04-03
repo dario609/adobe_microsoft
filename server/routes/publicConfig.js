@@ -5,7 +5,6 @@ import {
   getSessionTimerPublicConfig,
   getSitePasswordConfig,
 } from '../utils/publicConfig.js'
-import { normalizeContentImageMime } from '../utils/contentImageConfig.js'
 import { writeRuntimeConfigOverrides } from '../utils/runtimeConfigStore.js'
 
 export function createPublicConfigRouter() {
@@ -65,15 +64,12 @@ export function createPublicConfigRouter() {
 
   router.post('/config/content', (req, res) => {
     const patch = {}
-    if (req.body?.contentImageMime !== undefined) {
-      patch.contentImageMime = normalizeContentImageMime(req.body.contentImageMime)
-    }
     if (req.body?.submissionThankYouMessage !== undefined) {
       const s = req.body.submissionThankYouMessage
       patch.submissionThankYouMessage = typeof s === 'string' ? s.slice(0, 2000) : ''
     }
     if (Object.keys(patch).length === 0) {
-      return res.status(400).json({ error: 'Provide contentImageMime and/or submissionThankYouMessage.' })
+      return res.status(400).json({ error: 'Provide submissionThankYouMessage.' })
     }
     writeRuntimeConfigOverrides(patch)
     const content = getPublicContentSettings()

@@ -13,15 +13,10 @@ import {
   deleteLandingBackground,
   writeLandingBackground,
 } from '../utils/landingBackgroundStore.js'
+import { inferStoredExtFromUpload } from '../utils/contentImageConfig.js'
 import { getUploadDestinationSettings } from '../utils/publicConfig.js'
 import { readRuntimeConfigOverrides, writeRuntimeConfigOverrides } from '../utils/runtimeConfigStore.js'
 import { listUploadHistory } from '../utils/uploadHistory.js'
-
-function rasterExtFromMime(m) {
-  if (m === 'image/jpeg') return 'jpg'
-  if (m === 'image/webp') return 'webp'
-  return 'png'
-}
 
 export function createAdminRouter() {
   const router = Router()
@@ -41,7 +36,7 @@ export function createAdminRouter() {
       const buf = req.file?.buffer
       if (!buf?.length) return res.status(400).json({ error: 'Missing file field "banner".' })
       try {
-        await writeBannerPng(buf)
+        await writeBannerPng(buf, inferStoredExtFromUpload(req.file))
         return res.json({ ok: true })
       } catch {
         return res.status(500).json({ error: 'Could not save banner.' })
@@ -75,7 +70,7 @@ export function createAdminRouter() {
       const buf = req.file?.buffer
       if (!buf?.length) return res.status(400).json({ error: 'Missing file field "logo".' })
       try {
-        await writeExperienceLogo(buf)
+        await writeExperienceLogo(buf, inferStoredExtFromUpload(req.file))
         return res.json({ ok: true })
       } catch (e) {
         console.error('experience logo save:', e)
@@ -96,7 +91,7 @@ export function createAdminRouter() {
       const m = req.file?.mimetype
       if (!buf?.length || !m) return res.status(400).json({ error: 'Missing file field "background".' })
       try {
-        await writeLandingBackground(buf, rasterExtFromMime(m))
+        await writeLandingBackground(buf, inferStoredExtFromUpload(req.file))
         return res.json({ ok: true })
       } catch (e) {
         console.error('landing background save:', e)

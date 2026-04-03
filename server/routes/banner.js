@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { requireSiteGate } from '../middleware/requireSiteGate.js'
 import { uploadSessionBanner } from '../middleware/bannerUpload.js'
+import { inferStoredExtFromUpload } from '../utils/contentImageConfig.js'
 import { bannerExists, deleteBanner, getResolvedBannerForRead, writeBannerPng } from '../utils/bannerStore.js'
 
 export function createBannerRouter() {
@@ -28,7 +29,7 @@ export function createBannerRouter() {
         return res.status(400).json({ error: 'Missing file field "banner".' })
       }
       try {
-        await writeBannerPng(buf)
+        await writeBannerPng(buf, inferStoredExtFromUpload(req.file))
         return res.json({ ok: true })
       } catch (e) {
         console.error('Banner save:', e)
@@ -74,7 +75,7 @@ export function createBannerRouter() {
         return res.status(400).json({ error: 'Missing file field "banner".' })
       }
       try {
-        await writeBannerPng(buf)
+        await writeBannerPng(buf, inferStoredExtFromUpload(req.file))
         return res.json({ ok: true })
       } catch (e) {
         console.error('Banner save:', e)

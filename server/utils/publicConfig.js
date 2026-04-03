@@ -2,7 +2,6 @@
  * Session timer + site gate — read from server env (operators restart API after .env changes).
  * Also accepts VITE_SESSION_SECONDS-style mistaken prefix via dropboxEnv pattern if needed; keep simple: SESSION_* only.
  */
-import { contentImageMeta, resolveContentImageMime } from './contentImageConfig.js'
 import { readRuntimeConfigOverrides } from './runtimeConfigStore.js'
 
 /** Shown after a successful design upload (overridable in admin / runtime config). */
@@ -79,20 +78,18 @@ export function getAuthCookieSecret() {
   )
 }
 
-/** Gallery + banner upload type + guest thank-you copy (runtime + env). */
+/** Gallery + banner uploads accept any type; thank-you copy from runtime + env. */
 export function getPublicContentSettings() {
   const overrides = readRuntimeConfigOverrides()
-  const mime = resolveContentImageMime(overrides.contentImageMime)
-  const meta = contentImageMeta(mime)
   const rawMsg = overrides.submissionThankYouMessage
   const trimmed = typeof rawMsg === 'string' ? rawMsg.trim() : ''
   const envMsg = process.env.SUBMISSION_THANK_YOU_MESSAGE?.trim() || ''
   const submissionThankYouMessage =
     trimmed || (envMsg ? envMsg.slice(0, 2000) : DEFAULT_SUBMISSION_THANK_YOU_MESSAGE)
   return {
-    contentImageMime: mime,
-    contentImageAccept: meta.accept,
-    contentImageLabel: meta.label,
+    contentImageMime: '*/*',
+    contentImageAccept: '*/*',
+    contentImageLabel: 'All formats',
     submissionThankYouMessage,
   }
 }

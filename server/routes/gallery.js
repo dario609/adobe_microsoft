@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import fs from 'node:fs'
 import { uploadGalleryPngs, uploadGalleryPngSingle } from '../middleware/galleryUpload.js'
-import { extToMimeType } from '../utils/contentImageConfig.js'
+import { extToMimeType, inferStoredExtFromUpload } from '../utils/contentImageConfig.js'
 import {
   addGalleryPng,
   deleteGalleryItem,
@@ -84,6 +84,7 @@ export function createGalleryRouter() {
             originalName: f.originalname || 'image.png',
             bytes: buf.length,
             templateId,
+            fileExt: inferStoredExtFromUpload(f),
           })
           added.push(entry)
         }
@@ -137,7 +138,7 @@ export function createGalleryRouter() {
         return res.status(400).json({ error: 'No image file (field name "image").' })
       }
       try {
-        const updated = await replaceGalleryPng(req.params.id, buf)
+        const updated = await replaceGalleryPng(req.params.id, buf, inferStoredExtFromUpload(req.file))
         if (!updated) return res.status(404).json({ error: 'Not found.' })
         return res.json({ ok: true, item: mapItem(updated) })
       } catch (e) {

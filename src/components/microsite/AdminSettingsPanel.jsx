@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { apiFetch } from '../../api/apiFetch.js'
 import { useRuntimeConfig } from '../../hooks/useRuntimeConfig.js'
-import { fileMatchesContentPolicy } from '../../utils/contentUploadPolicy.js'
 import { ExperienceLogoImg } from './ExperienceLogoImg.jsx'
 
 async function parseResponse(res) {
@@ -27,16 +26,8 @@ function isMissingSettingsRoute(raw) {
   )
 }
 
-const CONTENT_IMAGE_OPTIONS = [
-  { value: 'image/png', label: 'PNG' },
-  { value: 'image/jpeg', label: 'JPEG' },
-  { value: 'image/webp', label: 'WebP' },
-  { value: 'application/pdf-standard', label: 'PDF (standard)' },
-  { value: 'application/pdf-print', label: 'PDF (print)' },
-]
-
 export function AdminSettingsPanel() {
-  const { reloadConfig, contentImageAccept } = useRuntimeConfig()
+  const { reloadConfig } = useRuntimeConfig()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [sessionSeconds, setSessionSeconds] = useState(0)
@@ -49,7 +40,6 @@ export function AdminSettingsPanel() {
   const [msg, setMsg] = useState('')
   const [err, setErr] = useState('')
   const [unsupported, setUnsupported] = useState(false)
-  const [contentImageMime, setContentImageMime] = useState('image/png')
   const [thankYouDraft, setThankYouDraft] = useState('')
   const [logoBusy, setLogoBusy] = useState(false)
   const [logoKey, setLogoKey] = useState(0)
@@ -81,7 +71,6 @@ export function AdminSettingsPanel() {
         setSitePasswordSet(Boolean(data?.sitePasswordSet))
         setAdminPasswordEnabled(Boolean(data?.adminPasswordEnabled))
         setAdminPasswordSet(Boolean(data?.adminPasswordSet))
-        if (typeof data?.contentImageMime === 'string') setContentImageMime(data.contentImageMime)
         if (typeof data?.submissionThankYouMessage === 'string') {
           setThankYouDraft(data.submissionThankYouMessage)
         }
@@ -126,10 +115,6 @@ export function AdminSettingsPanel() {
     const f = e.target.files?.[0]
     e.target.value = ''
     if (!f) return
-    if (!fileMatchesContentPolicy(f, contentImageMime)) {
-      setErr('Logo file must match the allowed type in Content settings below.')
-      return
-    }
     setErr('')
     setMsg('')
     setLogoBusy(true)
@@ -403,7 +388,6 @@ export function AdminSettingsPanel() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contentImageMime,
           submissionThankYouMessage: thankYouDraft,
         }),
       })
@@ -411,11 +395,10 @@ export function AdminSettingsPanel() {
       if (!res.ok) {
         throw new Error(toFriendlyError(res, data, 'Could not save content settings.'))
       }
-      if (typeof data?.contentImageMime === 'string') setContentImageMime(data.contentImageMime)
       if (typeof data?.submissionThankYouMessage === 'string') {
         setThankYouDraft(data.submissionThankYouMessage)
       }
-      setMsg('Gallery format and thank-you message updated.')
+      setMsg('Thank-you message updated.')
       await reloadConfig()
     } catch (err) {
       setErr(err?.message || 'Could not save content settings.')
@@ -473,8 +456,7 @@ export function AdminSettingsPanel() {
             <p className="adminSettings__cardTitle">Experience logo</p>
           </div>
           <p className="adminSettings__hint">
-            Shown on the template picker and beside the guest&apos;s design in Express. Must match the allowed file type
-            in Content settings (including PDF when selected).
+            Shown on the template picker and beside the guest&apos;s design in Express. Any file type is allowed.
           </p>
           <div className="adminSettings__logoRow">
             <ExperienceLogoImg key={logoKey} className="landHeader__logo" width={56} height={56} />
@@ -485,7 +467,7 @@ export function AdminSettingsPanel() {
               <input
                 type="file"
                 className="adminGallery__fileInput"
-                accept={contentImageAccept}
+                accept="*/*"
                 disabled={logoBusy || loading}
                 onChange={uploadExperienceLogo}
               />
@@ -507,24 +489,9 @@ export function AdminSettingsPanel() {
             <p className="adminSettings__cardTitle">Gallery &amp; banner uploads</p>
           </div>
           <p className="adminSettings__hint">
-            Gallery, session banner, and experience logo uploads must match this type. The server rejects anything else.
+            Gallery, session banner, experience logo, and landing background accept any file type the browser can
+            pick.
           </p>
-          <label className="adminSettings__label" htmlFor="content-image-mime">
-            Allowed file format
-          </label>
-          <select
-            id="content-image-mime"
-            className="adminSettings__input"
-            value={contentImageMime}
-            onChange={(e) => setContentImageMime(e.target.value)}
-            disabled={saving || loading || unsupported}
-          >
-            {CONTENT_IMAGE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
           <label className="adminSettings__label" htmlFor="thank-you-message">
             Message after successful submission
           </label>
@@ -548,8 +515,8 @@ export function AdminSettingsPanel() {
             <p className="adminSettings__cardTitle">User page background</p>
           </div>
           <p className="adminSettings__hint">
-            Full-page backdrop behind the template picker (PNG, JPEG, or WebP only). Leave empty for the default
-            gradient.
+            Full-page backdrop behind the template picker. Any image or file type is accepted. Leave empty for the
+            default gradient.
           </p>
           <div className="adminSettings__btnRow">
             <label className="btn btn--adminPrimary btn--small">
@@ -557,7 +524,7 @@ export function AdminSettingsPanel() {
               <input
                 type="file"
                 className="adminGallery__fileInput"
-                accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                accept="*/*"
                 disabled={landBgBusy || loading}
                 onChange={uploadLandingBackground}
               />
