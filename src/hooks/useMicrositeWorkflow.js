@@ -6,7 +6,7 @@ import { ADOBE_TEMPLATE_ID, BRAND_NAME, REQUIRE_ADOBE_TEMPLATE } from '../consta
 import { useRuntimeConfig } from './useRuntimeConfig.js'
 import { blobFromAdobeExport, getPublishAssetPayload } from '../utils/adobeAsset.js'
 import { friendlyExportFailure } from '../utils/uploadErrors.js'
-import { clearGalleryPick, getGalleryPickId, getGalleryTemplateId } from '../constants/gallerySelection.js'
+import { clearGalleryPick, getGalleryPickId, getGalleryTemplateId, getGalleryTemplateType } from '../constants/gallerySelection.js'
 import { buildPickupExportFilename } from '../utils/uploadFilename.js'
 
 export function useMicrositeWorkflow() {
@@ -217,7 +217,8 @@ export function useMicrositeWorkflow() {
 
       try {
         const templateOverride = galleryTemplate || ADOBE_TEMPLATE_ID
-        openEditor(editor, appConfig, templateOverride)
+        const templateType = getGalleryTemplateType()
+        openEditor(editor, appConfig, templateOverride, templateType)
       } catch (e) {
         launchedRef.current = false
         setPhase('landing')

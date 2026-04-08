@@ -1,9 +1,15 @@
 import './env.js'
 import { createApp } from './app.js'
 import { API_PREFIX, DEFAULT_PORT, OAUTH_DROPBOX_START } from './config.js'
+import { migrateGalleryManifest } from './utils/galleryStore.js'
 
 const port = Number(process.env.PORT) || DEFAULT_PORT
 const app = createApp()
+
+// Migrate gallery manifest on startup
+migrateGalleryManifest().catch((err) => {
+  console.error('Gallery migration failed:', err)
+})
 
 // Render (and most PaaS) require binding to 0.0.0.0 so the platform can route traffic.
 const host = process.env.HOST || '0.0.0.0'

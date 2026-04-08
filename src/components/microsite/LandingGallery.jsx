@@ -36,13 +36,13 @@ export function LandingGallery({ onSelectionChange }) {
     const tid = it.templateId || ''
     const fe = it.fileExt || 'png'
     if (getGalleryPickId() === it.id && getGalleryTemplateId() === tid) return
-    setGalleryPickId(it.id, tid, fe)
+    setGalleryPickId(it.id, tid, it.templateType || '', fe)
     onSelectionChange?.()
   }, [items, selectedId, onSelectionChange])
 
   const pick = (it) => {
     setSelectedId(it.id)
-    setGalleryPickId(it.id, it.templateId || '', it.fileExt || 'png')
+    setGalleryPickId(it.id, it.templateId || '', it.templateType || '', it.fileExt || 'png')
     onSelectionChange?.()
   }
 

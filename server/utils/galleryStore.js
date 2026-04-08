@@ -21,11 +21,16 @@ async function readManifest() {
     const raw = await fs.readFile(MANIFEST, 'utf8')
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed.map((it) => ({
-      ...it,
-      fileExt: normalizeStoredExt(it.fileExt),
-      templateId: normalizeTemplateId(it.templateId),
-    }))
+    return parsed.map((it) => {
+      const normalizedId = normalizeTemplateId(it.templateId)
+      const templateSource = parseTemplateSource(it.templateId || '')
+      return {
+        ...it,
+        fileExt: normalizeStoredExt(it.fileExt),
+        templateId: normalizedId,
+        templateType: it.templateType || templateSource.type, // Migrate existing items
+      }
+    })
   } catch {
     return []
   }
@@ -34,6 +39,43 @@ async function readManifest() {
 async function writeManifest(items) {
   await ensureDir()
   await fs.writeFile(MANIFEST, JSON.stringify(items, null, 2), 'utf8')
+}
+
+/** Migrate existing gallery items to include templateType */
+export async function migrateGalleryManifest() {
+  try {
+    const raw = await fs.readFile(MANIFEST, 'utf8')
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return
+    let migrated = false
+    const migratedItems = parsed.map((it) => {
+      if (!it.templateType && it.templateId) {
+        const templateSource = parseTemplateSource(it.templateId)
+        migrated = true
+        console.log(`Migrating item ${it.id}: templateType=${templateSource.type}`)
+        return { 
+          ...it, 
+          fileExt: normalizeStoredExt(it.fileExt),
+          templateId: normalizeTemplateId(it.templateId),
+          templateType: templateSource.type 
+        }
+      }
+      return {
+        ...it,
+        fileExt: normalizeStoredExt(it.fileExt),
+        templateId: normalizeTemplateId(it.templateId),
+        templateType: it.templateType || parseTemplateSource(it.templateId).type
+      }
+    })
+    if (migrated) {
+      await writeManifest(migratedItems)
+      console.log(`Migrated ${migratedItems.length} gallery items to include templateType`)
+    } else {
+      console.log('No migration needed')
+    }
+  } catch (err) {
+    console.error('Migration failed:', err)
+  }
 }
 
 /**
@@ -81,6 +123,26 @@ export function normalizeTemplateId(v) {
   return s.slice(0, 4096)
 }
 
+/**
+ * @param {string} v
+ * @returns {{ type: 'adobeTemplate' | 'userTemplate', id: string }}
+ */
+export function parseTemplateSource(v) {
+  if (v == null) return { type: 'adobeTemplate', id: '' }
+  const s = String(v).trim()
+  if (!s) return { type: 'adobeTemplate', id: '' }
+
+  // Check if it's a userTemplate URL
+  if (s.includes('/design/userTemplate/')) {
+    const id = normalizeTemplateId(s)
+    return { type: 'userTemplate', id }
+  }
+
+  // Default to adobeTemplate
+  const id = normalizeTemplateId(s)
+  return { type: 'adobeTemplate', id }
+}
+
 /** Canonical display name for uniqueness (matches persist rules). */
 export function displayKey(name) {
   const s = String(name ?? '').trim().slice(0, 240)
@@ -120,14 +182,14 @@ export async function addGalleryPng(buffer, meta) {
   const p = getGalleryBlobPath(id, ext)
   if (!p) throw new Error('Invalid id')
   const originalName = displayKey(meta.originalName ?? 'image.png')
-  const templateId = normalizeTemplateId(meta.templateId)
-  if (!templateId) {
+  const templateSource = parseTemplateSource(meta.templateId)
+  if (!templateSource.id) {
     const err = new Error('Template ID is required.')
     err.code = 'GALLERY_VALIDATION'
     throw err
   }
   const items = await readManifest()
-  const conflict = findGalleryConflict(items, null, originalName, templateId)
+  const conflict = findGalleryConflict(items, null, originalName, templateSource.id)
   if (conflict) {
     const err = new Error(conflict.message)
     err.code = 'GALLERY_CONFLICT'
@@ -140,7 +202,8 @@ export async function addGalleryPng(buffer, meta) {
     originalName,
     bytes: meta.bytes,
     uploadedAt: new Date().toISOString(),
-    templateId,
+    templateId: templateSource.id,
+    templateType: templateSource.type,
     fileExt: ext,
   }
   items.unshift(entry)
@@ -176,13 +239,14 @@ export async function updateGalleryItem(id, patch) {
   const cur = items[idx]
   const next = { ...cur }
   if (patch.templateId !== undefined) {
-    const tid = normalizeTemplateId(patch.templateId)
-    if (!tid) {
+    const templateSource = parseTemplateSource(patch.templateId)
+    if (!templateSource.id) {
       const err = new Error('Template ID is required.')
       err.code = 'GALLERY_VALIDATION'
       throw err
     }
-    next.templateId = tid
+    next.templateId = templateSource.id
+    next.templateType = templateSource.type
   }
   if (patch.originalName !== undefined) next.originalName = displayKey(patch.originalName)
   const effectiveTid = normalizeTemplateId(next.templateId)

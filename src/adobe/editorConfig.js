@@ -52,13 +52,19 @@ export function getDocumentConfig(overrideTemplateId) {
   return { kind: 'blank', canvasSize: 'BusinessCard' }
 }
 
-/** @param {string} [overrideTemplateId] */
-export function openEditor(editor, appConfig, overrideTemplateId) {
+/** @param {string} [overrideTemplateId] @param {string} [templateType] */
+export function openEditor(editor, appConfig, overrideTemplateId, templateType) {
   const doc = getDocumentConfig(overrideTemplateId)
   const container = getEditorContainerConfig()
 
   if (doc.kind === 'template') {
-    editor.createWithTemplate({ templateId: doc.templateId }, appConfig, EXPORT_OPTIONS, container)
+    if (templateType === 'userTemplate') {
+      // For user templates, use edit() method
+      editor.edit({ documentId: doc.templateId }, appConfig, EXPORT_OPTIONS, container)
+    } else {
+      // For Adobe templates, use createWithTemplate() method
+      editor.createWithTemplate({ templateId: doc.templateId }, appConfig, EXPORT_OPTIONS, container)
+    }
   } else {
     editor.create({ canvasSize: doc.canvasSize }, appConfig, EXPORT_OPTIONS, container)
   }

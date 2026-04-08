@@ -1,5 +1,6 @@
 export const GALLERY_PICK_KEY = 'microsite_gallery_pick'
 export const GALLERY_TEMPLATE_KEY = 'microsite_gallery_template'
+export const GALLERY_TEMPLATE_TYPE_KEY = 'microsite_gallery_template_type'
 export const GALLERY_FILE_EXT_KEY = 'microsite_gallery_file_ext'
 
 export function getGalleryPickId() {
@@ -18,6 +19,14 @@ export function getGalleryTemplateId() {
   }
 }
 
+export function getGalleryTemplateType() {
+  try {
+    return (sessionStorage.getItem(GALLERY_TEMPLATE_TYPE_KEY) || '').trim()
+  } catch {
+    return ''
+  }
+}
+
 export function getGalleryPickFileExt() {
   try {
     return (sessionStorage.getItem(GALLERY_FILE_EXT_KEY) || 'png').trim() || 'png'
@@ -26,13 +35,16 @@ export function getGalleryPickFileExt() {
   }
 }
 
-export function setGalleryPickId(id, templateId = '', fileExt = 'png') {
+export function setGalleryPickId(id, templateId = '', templateType = '', fileExt = 'png') {
   try {
     if (id) sessionStorage.setItem(GALLERY_PICK_KEY, id)
     else sessionStorage.removeItem(GALLERY_PICK_KEY)
     const t = String(templateId ?? '').trim()
     if (t) sessionStorage.setItem(GALLERY_TEMPLATE_KEY, t)
     else sessionStorage.removeItem(GALLERY_TEMPLATE_KEY)
+    const tt = String(templateType ?? '').trim()
+    if (tt) sessionStorage.setItem(GALLERY_TEMPLATE_TYPE_KEY, tt)
+    else sessionStorage.removeItem(GALLERY_TEMPLATE_TYPE_KEY)
     const fe = String(fileExt ?? '').trim() || 'png'
     if (id) sessionStorage.setItem(GALLERY_FILE_EXT_KEY, fe)
     else sessionStorage.removeItem(GALLERY_FILE_EXT_KEY)
@@ -42,5 +54,5 @@ export function setGalleryPickId(id, templateId = '', fileExt = 'png') {
 }
 
 export function clearGalleryPick() {
-  setGalleryPickId('', '', '')
+  setGalleryPickId('', '', '', '')
 }
