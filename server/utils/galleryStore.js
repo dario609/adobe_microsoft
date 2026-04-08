@@ -24,6 +24,7 @@ async function readManifest() {
     return parsed.map((it) => ({
       ...it,
       fileExt: normalizeStoredExt(it.fileExt),
+      templateId: normalizeTemplateId(it.templateId),
     }))
   } catch {
     return []
