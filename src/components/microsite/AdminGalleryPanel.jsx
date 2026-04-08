@@ -3,7 +3,7 @@ import { ADOBE_EXPLORE_TEMPLATES_URL } from '../../constants/config.js'
 import { apiFetch } from '../../api/apiFetch.js'
 import { apiUrl } from '../../api/apiBase.js'
 import { useRuntimeConfig } from '../../hooks/useRuntimeConfig.js'
-import { validateGalleryDraftLocal } from '../../utils/galleryDisplay.js'
+import { validateGalleryDraftLocal, normalizeGalleryTemplateId } from '../../utils/galleryDisplay.js'
 
 async function parseJson(res) {
   const ct = res.headers.get('content-type') || ''
@@ -121,7 +121,7 @@ export function AdminGalleryPanel() {
   const uploadOne = async (file) => {
     const fd = new FormData()
     fd.append('images', file)
-    const tid = uploadTemplateId.trim()
+    const tid = normalizeGalleryTemplateId(uploadTemplateId)
     if (tid) fd.append('templateId', tid)
     const res = await apiFetch('/api/gallery', { method: 'POST', body: fd })
     const data = await parseJson(res)
@@ -152,7 +152,7 @@ export function AdminGalleryPanel() {
     const files = Array.from(e.target.files || [])
     e.target.value = ''
     if (!files.length) return
-    const tid = uploadTemplateId.trim()
+    const tid = normalizeGalleryTemplateId(uploadTemplateId)
     if (!tid) {
       setActionError('Enter the template ID above before uploading — it is required for every image.')
       return
@@ -201,7 +201,7 @@ export function AdminGalleryPanel() {
     setBusy(true)
     try {
       const body = JSON.stringify({
-        templateId: d.templateId,
+        templateId: normalizeGalleryTemplateId(d.templateId),
         originalName: d.originalName,
       })
       let res = await apiFetch(`/api/gallery/${encodeURIComponent(id)}/meta`, {
@@ -306,7 +306,7 @@ export function AdminGalleryPanel() {
               id="upload-template-id"
               className="adminGallery__textInput adminGallery__textInput--template adminGallery__textInput--toolbarTemplate"
               type="text"
-              placeholder="Adobe template URN"
+              placeholder="Adobe template URN or URL"
               value={uploadTemplateId}
               onChange={(e) => setUploadTemplateId(e.target.value)}
               disabled={busy}
@@ -394,7 +394,7 @@ export function AdminGalleryPanel() {
                   fe.templateId ? ' adminGallery__textInput--invalid' : ''
                 }`}
                 type="text"
-                placeholder="Required — Adobe template URN"
+                placeholder="Required — Adobe template URN or URL"
                 value={d.templateId}
                 onChange={(e) => {
                   setDraft(it.id, { templateId: e.target.value })

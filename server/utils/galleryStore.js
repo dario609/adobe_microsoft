@@ -51,11 +51,32 @@ export function getGalleryFilePath(id) {
   return getGalleryBlobPath(id, 'png')
 }
 
-/** Adobe URNs can be long (e.g. brand templates with a path segment); do not truncate aggressively. */
+/**
+ * Adobe URNs can be long (e.g. brand templates with a path segment);
+ * normalize URLs or shared links to the actual template URN when possible.
+ */
+const TEMPLATE_ID_QUERY_REGEX = /[?&]templateId=([^&]+)/i
+const TEMPLATE_URN_REGEX = /urn:aaid:[^?\s"'<>]+/i
+
 export function normalizeTemplateId(v) {
   if (v == null) return ''
-  const s = String(v).trim()
+  let s = String(v).trim()
   if (!s) return ''
+
+  const queryMatch = s.match(TEMPLATE_ID_QUERY_REGEX)
+  if (queryMatch && queryMatch[1]) {
+    try {
+      s = decodeURIComponent(queryMatch[1])
+    } catch {
+      s = queryMatch[1]
+    }
+  }
+
+  const urnMatch = s.match(TEMPLATE_URN_REGEX)
+  if (urnMatch) {
+    s = urnMatch[0]
+  }
+
   return s.slice(0, 4096)
 }
 
