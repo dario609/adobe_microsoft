@@ -143,15 +143,16 @@ export function parseTemplateSource(v) {
   const s = String(v).trim()
   if (!s) return { type: 'adobeTemplate', id: '' }
 
-  // Check if it's a userTemplate URL
-  if (s.includes('/design/userTemplate/')) {
-    const id = normalizeTemplateId(s)
-    return { type: 'userTemplate', id }
-  }
+  // Check BEFORE normalization - if the original string contains userTemplate indicator
+  const isUserTemplate = s.includes('/design/userTemplate/') || s.includes('userTemplate')
 
-  // Default to adobeTemplate
+  // Extract the URN
   const id = normalizeTemplateId(s)
-  return { type: 'adobeTemplate', id }
+
+  return { 
+    type: isUserTemplate ? 'userTemplate' : 'adobeTemplate', 
+    id 
+  }
 }
 
 /** Canonical display name for uniqueness (matches persist rules). */
