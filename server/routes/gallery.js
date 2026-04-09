@@ -21,6 +21,7 @@ function mapItem(it) {
     uploadedAt: it.uploadedAt,
     templateId: it.templateId || '',
     fileExt: it.fileExt || 'png',
+    templateType: it.templateType || 'adobeTemplate',
   }
 }
 
