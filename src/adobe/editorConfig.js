@@ -58,9 +58,12 @@ export function openEditor(editor, appConfig, overrideTemplateId, templateType) 
   const container = getEditorContainerConfig()
 
   if (doc.kind === 'template') {
-    // Both Adobe templates and user templates use createWithTemplate()
-    // The SDK differentiates them by the templateId URN format (adobeTemplate vs userTemplate)
-    editor.createWithTemplate({ templateId: doc.templateId }, appConfig, EXPORT_OPTIONS, container)
+    // User templates use edit() method; Adobe templates use createWithTemplate()
+    if (templateType === 'userTemplate') {
+      editor.edit({ documentId: doc.templateId }, appConfig, EXPORT_OPTIONS, container)
+    } else {
+      editor.createWithTemplate({ templateId: doc.templateId }, appConfig, EXPORT_OPTIONS, container)
+    }
   } else {
     editor.create({ canvasSize: doc.canvasSize }, appConfig, EXPORT_OPTIONS, container)
   }

@@ -44,7 +44,18 @@ async function writeManifest(items) {
 /** Migrate existing gallery items to include templateType */
 export async function migrateGalleryManifest() {
   try {
-    const raw = await fs.readFile(MANIFEST, 'utf8')
+    // On first run, manifest doesn't exist yet—this is normal
+    let raw
+    try {
+      raw = await fs.readFile(MANIFEST, 'utf8')
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        console.log('No existing gallery manifest (first run)')
+        return
+      }
+      throw err
+    }
+
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return
     let migrated = false
