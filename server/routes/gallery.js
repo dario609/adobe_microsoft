@@ -73,7 +73,9 @@ export function createGalleryRouter() {
       if (!Array.isArray(files) || files.length === 0) {
         return res.status(400).json({ error: 'No image files uploaded (use field name "images").' })
       }
-      const uploadType = normalizeGalleryTemplateType(req.body?.templateType)
+      const rawTt = req.body?.templateType
+      const trimmedTt = rawTt != null ? String(rawTt).trim() : ''
+      const uploadType = trimmedTt === '' ? null : normalizeGalleryTemplateType(rawTt)
       const templateIdRaw = req.body?.templateId
       const templateId =
         uploadType === 'blankCanvas' ? '' : normalizeTemplateId(templateIdRaw)
@@ -92,7 +94,7 @@ export function createGalleryRouter() {
             originalName: f.originalname || 'image.png',
             bytes: buf.length,
             templateId: uploadType === 'blankCanvas' ? '' : templateId,
-            templateType: uploadType,
+            templateType: uploadType ?? undefined,
             canvasWidth: req.body?.canvasWidth,
             canvasHeight: req.body?.canvasHeight,
             fileExt: inferStoredExtFromUpload(f),

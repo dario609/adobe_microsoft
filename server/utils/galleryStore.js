@@ -161,15 +161,26 @@ export function parseCanvasDimension(v) {
  * @param {string} v
  * @returns {{ type: 'adobeTemplate' | 'userTemplate', id: string }}
  */
+const EXPRESS_PROJECT_PATH = /\/project\/([^/?#]+)/i
+/** Standalone project UUIDs (from share links) open with editor.edit, not createWithTemplate. */
+const PROJECT_UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
 export function parseTemplateSource(v) {
   if (v == null) return { type: 'adobeTemplate', id: '' }
   const s = String(v).trim()
   if (!s) return { type: 'adobeTemplate', id: '' }
 
+  if (PROJECT_UUID_RE.test(s)) {
+    return { type: 'userTemplate', id: s }
+  }
+
   const isUserTemplate =
     s.includes('/design/userTemplate/') ||
     /\buserTemplate\b/i.test(s) ||
     /express\.adobe\.com\/[^?\s]*\/project\//i.test(s) ||
+    /new\.express\.adobe\.com\/[^?\s]*\/project\//i.test(s) ||
+    EXPRESS_PROJECT_PATH.test(s) ||
     /\/project\/[a-z0-9-]+\/edit/i.test(s)
 
   const id = normalizeTemplateId(s)
@@ -248,13 +259,10 @@ export async function addGalleryPng(buffer, meta) {
       ? normalizeGalleryTemplateType(meta.templateType)
       : null
   const inferred = parseTemplateSource(meta.templateId)
-  let resolvedType = 'adobeTemplate'
+  /** User/Adobe distinction always comes from the ID/URL (not client dropdown). */
+  let resolvedType = inferred.type
   if (explicitType === 'blankCanvas') {
     resolvedType = 'blankCanvas'
-  } else if (explicitType === 'userTemplate' || explicitType === 'adobeTemplate') {
-    resolvedType = explicitType
-  } else {
-    resolvedType = inferred.type
   }
 
   let templateId = ''
@@ -370,9 +378,14 @@ export async function updateGalleryItem(id, patch) {
   }
   if (patch.originalName !== undefined) next.originalName = displayKey(patch.originalName)
 
-  const tt = normalizeGalleryTemplateType(next.templateType)
+  const tid = normalizeTemplateId(next.templateId)
 
-  if (tt === 'blankCanvas') {
+  if (tid) {
+    next.templateId = tid
+    next.templateType = parseTemplateSource(tid).type
+    next.canvasWidth = 0
+    next.canvasHeight = 0
+  } else if (normalizeGalleryTemplateType(next.templateType) === 'blankCanvas') {
     const w = parseCanvasDimension(next.canvasWidth)
     const h = parseCanvasDimension(next.canvasHeight)
     if (w == null || h == null) {
@@ -385,16 +398,9 @@ export async function updateGalleryItem(id, patch) {
     next.templateId = ''
     next.templateType = 'blankCanvas'
   } else {
-    const tid = normalizeTemplateId(next.templateId)
-    if (!tid) {
-      const err = new Error('Template or project ID is required.')
-      err.code = 'GALLERY_VALIDATION'
-      throw err
-    }
-    next.templateId = tid
-    next.templateType = tt === 'userTemplate' ? 'userTemplate' : 'adobeTemplate'
-    next.canvasWidth = 0
-    next.canvasHeight = 0
+    const err = new Error('Template or project ID is required.')
+    err.code = 'GALLERY_VALIDATION'
+    throw err
   }
 
   const conflict = findGalleryConflict(

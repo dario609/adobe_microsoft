@@ -1,5 +1,34 @@
 import { ADOBE_TEMPLATE_ID } from '../constants/config.js'
+import { normalizeGalleryTemplateId } from '../utils/galleryDisplay.js'
 import { isIOSOrIPadWebKit } from '../utils/device.js'
+
+/**
+ * Express `editor.edit` expects a project/document id. Pull it from share URLs when needed.
+ * @param {string} raw
+ */
+function expressDocumentIdForEdit(raw) {
+  const s = String(raw ?? '').trim()
+  if (!s) return ''
+  const projectSeg = s.match(/\/project\/([^/?#]+)/i)
+  if (projectSeg) {
+    try {
+      return decodeURIComponent(projectSeg[1])
+    } catch {
+      return projectSeg[1]
+    }
+  }
+  const urn = s.match(/urn:aaid:[^\s"'<>?#]+/i)
+  if (urn) return urn[0]
+  const q = s.match(/[?&]templateId=([^&]+)/i)
+  if (q) {
+    try {
+      return decodeURIComponent(q[1])
+    } catch {
+      return q[1]
+    }
+  }
+  return s.slice(0, 4096)
+}
 
 export const EXPRESS_PARENT_ELEMENT_ID = 'express-editor'
 
@@ -45,7 +74,8 @@ export function getEditorContainerConfig() {
 
 /** @param {string} [overrideTemplateId] — from gallery pick; falls back to env */
 export function getDocumentConfig(overrideTemplateId) {
-  const tid = String(overrideTemplateId ?? '').trim() || String(ADOBE_TEMPLATE_ID || '').trim()
+  const tid =
+    normalizeGalleryTemplateId(overrideTemplateId) || normalizeGalleryTemplateId(ADOBE_TEMPLATE_ID || '')
   if (tid) {
     return { kind: 'template', templateId: tid }
   }
@@ -74,7 +104,8 @@ export function openEditor(editor, appConfig, overrideTemplateId, templateType, 
 
   if (doc.kind === 'template') {
     if (templateType === 'userTemplate') {
-      editor.edit({ documentId: doc.templateId }, appConfig, EXPORT_OPTIONS, container)
+      const documentId = expressDocumentIdForEdit(doc.templateId)
+      editor.edit({ documentId }, appConfig, EXPORT_OPTIONS, container)
     } else {
       editor.createWithTemplate({ templateId: doc.templateId }, appConfig, EXPORT_OPTIONS, container)
     }

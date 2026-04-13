@@ -16,9 +16,6 @@ export const ADOBE_TEMPLATE_ID = import.meta.env.VITE_ADOBE_TEMPLATE_ID?.trim() 
  */
 export const REQUIRE_ADOBE_TEMPLATE = import.meta.env.VITE_REQUIRE_ADOBE_TEMPLATE === 'true'
 
-/** Adobe Express template browser (lookup template IDs). */
-export const ADOBE_EXPLORE_TEMPLATES_URL = 'https://express.adobe.com/explore/templates'
-
 /** Privacy / terms page (opens in a new tab). Override with `VITE_PRIVACY_TERMS_URL`. */
 export const PRIVACY_TERMS_URL =
   import.meta.env.VITE_PRIVACY_TERMS_URL || 'http://wearethefittest.com/express/privacyandterms'
