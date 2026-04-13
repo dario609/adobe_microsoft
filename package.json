@@ -10,6 +10,7 @@
     "start": "node server/index.js",
     "build": "vite build",
     "lint": "eslint .",
+    "docs:adobe-pdf": "node scripts/generateAdobeSubmissionPdf.mjs",
     "preview": "vite preview",
     "loadtest:k6:edge": "k6 run loadtests/k6/edge-abuse.js",
     "loadtest:k6:baseline": "k6 run loadtests/k6/baseline.js",
@@ -38,6 +39,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "pdfkit": "^0.18.0",
     "vite": "^8.0.1"
   }
 }

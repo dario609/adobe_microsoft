@@ -44,6 +44,8 @@ export function AdminSettingsPanel() {
   const [logoBusy, setLogoBusy] = useState(false)
   const [logoKey, setLogoKey] = useState(0)
   const [landBgBusy, setLandBgBusy] = useState(false)
+  const [sessionHeaderBgBusy, setSessionHeaderBgBusy] = useState(false)
+  const [editorWorkspaceBgBusy, setEditorWorkspaceBgBusy] = useState(false)
   const [uploadDestination, setUploadDestination] = useState('dropbox')
   const [smbHost, setSmbHost] = useState('')
   const [smbShare, setSmbShare] = useState('')
@@ -188,6 +190,82 @@ export function AdminSettingsPanel() {
       setErr(er?.message || 'Could not remove background.')
     } finally {
       setLandBgBusy(false)
+    }
+  }
+
+  const uploadSessionHeaderBackground = async (e) => {
+    const f = e.target.files?.[0]
+    e.target.value = ''
+    if (!f) return
+    setErr('')
+    setMsg('')
+    setSessionHeaderBgBusy(true)
+    try {
+      const fd = new FormData()
+      fd.append('sessionHeaderBackground', f)
+      const res = await apiFetch('/api/admin/session-header-background', { method: 'POST', body: fd })
+      const data = await parseResponse(res)
+      if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : 'Upload failed.')
+      setMsg('Session header strip background updated. Refresh the user page to see it.')
+    } catch (er) {
+      setErr(er?.message || 'Could not upload session header background.')
+    } finally {
+      setSessionHeaderBgBusy(false)
+    }
+  }
+
+  const clearSessionHeaderBackground = async () => {
+    if (!window.confirm('Remove the custom background behind the session header (logo / Leave / timer)?')) return
+    setErr('')
+    setMsg('')
+    setSessionHeaderBgBusy(true)
+    try {
+      const res = await apiFetch('/api/admin/session-header-background', { method: 'DELETE' })
+      const data = await parseResponse(res)
+      if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : 'Remove failed.')
+      setMsg('Session header background removed.')
+    } catch (er) {
+      setErr(er?.message || 'Could not remove session header background.')
+    } finally {
+      setSessionHeaderBgBusy(false)
+    }
+  }
+
+  const uploadEditorWorkspaceBackground = async (e) => {
+    const f = e.target.files?.[0]
+    e.target.value = ''
+    if (!f) return
+    setErr('')
+    setMsg('')
+    setEditorWorkspaceBgBusy(true)
+    try {
+      const fd = new FormData()
+      fd.append('editorWorkspaceBackground', f)
+      const res = await apiFetch('/api/admin/editor-workspace-background', { method: 'POST', body: fd })
+      const data = await parseResponse(res)
+      if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : 'Upload failed.')
+      setMsg('Editor workspace background updated. Refresh the user page to see it.')
+    } catch (er) {
+      setErr(er?.message || 'Could not upload editor workspace background.')
+    } finally {
+      setEditorWorkspaceBgBusy(false)
+    }
+  }
+
+  const clearEditorWorkspaceBackground = async () => {
+    if (!window.confirm('Remove the custom background around the Express canvas?')) return
+    setErr('')
+    setMsg('')
+    setEditorWorkspaceBgBusy(true)
+    try {
+      const res = await apiFetch('/api/admin/editor-workspace-background', { method: 'DELETE' })
+      const data = await parseResponse(res)
+      if (!res.ok) throw new Error(typeof data?.error === 'string' ? data.error : 'Remove failed.')
+      setMsg('Editor workspace background removed.')
+    } catch (er) {
+      setErr(er?.message || 'Could not remove editor workspace background.')
+    } finally {
+      setEditorWorkspaceBgBusy(false)
     }
   }
 
@@ -536,6 +614,68 @@ export function AdminSettingsPanel() {
               onClick={clearLandingBackground}
             >
               Remove background
+            </button>
+          </div>
+        </div>
+
+        <div className="adminSettings__card">
+          <div className="adminSettings__cardHead">
+            <span className="adminSettings__badge adminSettings__badge--site">Session</span>
+            <p className="adminSettings__cardTitle">Header strip background</p>
+          </div>
+          <p className="adminSettings__hint">
+            Full-width backdrop behind the logo, gallery thumbnail, Leave, and timer while a guest is editing. Separate
+            from the landing page background.
+          </p>
+          <div className="adminSettings__btnRow">
+            <label className="btn btn--adminPrimary btn--small">
+              {sessionHeaderBgBusy ? 'Working…' : 'Upload strip background'}
+              <input
+                type="file"
+                className="adminGallery__fileInput"
+                accept="*/*"
+                disabled={sessionHeaderBgBusy || loading}
+                onChange={uploadSessionHeaderBackground}
+              />
+            </label>
+            <button
+              type="button"
+              className="btn btn--adminSoft btn--small"
+              disabled={sessionHeaderBgBusy || loading}
+              onClick={clearSessionHeaderBackground}
+            >
+              Remove strip background
+            </button>
+          </div>
+        </div>
+
+        <div className="adminSettings__card">
+          <div className="adminSettings__cardHead">
+            <span className="adminSettings__badge adminSettings__badge--site">Session</span>
+            <p className="adminSettings__cardTitle">Editor workspace background</p>
+          </div>
+          <p className="adminSettings__hint">
+            Area around the embedded Adobe Express frame (the light page chrome). Optional image; if removed, the default
+            light background is used.
+          </p>
+          <div className="adminSettings__btnRow">
+            <label className="btn btn--adminPrimary btn--small">
+              {editorWorkspaceBgBusy ? 'Working…' : 'Upload workspace background'}
+              <input
+                type="file"
+                className="adminGallery__fileInput"
+                accept="*/*"
+                disabled={editorWorkspaceBgBusy || loading}
+                onChange={uploadEditorWorkspaceBackground}
+              />
+            </label>
+            <button
+              type="button"
+              className="btn btn--adminSoft btn--small"
+              disabled={editorWorkspaceBgBusy || loading}
+              onClick={clearEditorWorkspaceBackground}
+            >
+              Remove workspace background
             </button>
           </div>
         </div>

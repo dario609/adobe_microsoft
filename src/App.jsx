@@ -15,6 +15,7 @@ import { SessionHeader } from './components/microsite/SessionHeader.jsx'
 import { SitePasswordGate } from './components/microsite/SitePasswordGate.jsx'
 import { IOSExpressNotice } from './components/microsite/IOSExpressNotice.jsx'
 import { UploadOverlay } from './components/microsite/UploadOverlay.jsx'
+import { useOptionalBrandingBackground } from './hooks/useOptionalBrandingBackground.js'
 import { useRuntimeConfig } from './hooks/useRuntimeConfig.js'
 import { useMicrositeWorkflow } from './hooks/useMicrositeWorkflow.js'
 
@@ -93,11 +94,18 @@ function MicrositeRoutes() {
   const isEditing = m.phase === 'editing'
   const [galleryCacheKey, setGalleryCacheKey] = useState(0)
   const landingBgStyle = useLandingBackgroundStyle()
+  const editorWorkspaceBg = useOptionalBrandingBackground('/api/branding/editor-workspace-background')
+
+  const appRootStyle = isEditing
+    ? editorWorkspaceBg.hasImage
+      ? editorWorkspaceBg.style
+      : undefined
+    : landingBgStyle
 
   return (
     <div
       className={`appRoot${isEditing ? ' appRoot--editing' : ' appRoot--landing'}`}
-      style={!isEditing ? landingBgStyle : undefined}
+      style={appRootStyle}
     >
       <div className={`shell${isEditing ? ' shell--editing' : ' shell--landing'}`}>
         {!isEditing ? (

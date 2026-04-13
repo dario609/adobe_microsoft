@@ -1,4 +1,5 @@
 import { formatClock } from '../../utils/time.js'
+import { useOptionalBrandingBackground } from '../../hooks/useOptionalBrandingBackground.js'
 import { ExperienceLogoImg } from './ExperienceLogoImg.jsx'
 import { HeaderBanner } from './HeaderBanner.jsx'
 
@@ -10,9 +11,14 @@ export function SessionHeader({
   bannerCacheKey = 0,
 }) {
   const low = showTimer && remainingSeconds <= 120
+  const headerBg = useOptionalBrandingBackground('/api/branding/session-header-background')
 
   return (
-    <header className="sessionHeader" role="banner">
+    <header
+      className={`sessionHeader${headerBg.hasImage ? ' sessionHeader--photoBg' : ''}`}
+      style={headerBg.style}
+      role="banner"
+    >
       <div className="sessionHeader__brandRow">
         <ExperienceLogoImg className="sessionHeader__logo" width={52} height={52} />
         <HeaderBanner cacheKey={bannerCacheKey} />

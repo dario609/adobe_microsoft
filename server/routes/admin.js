@@ -1,7 +1,9 @@
 import { Router } from 'express'
 import { uploadSessionBanner } from '../middleware/bannerUpload.js'
 import { uploadExperienceLogo } from '../middleware/experienceLogoUpload.js'
+import { uploadEditorWorkspaceBackground } from '../middleware/editorWorkspaceBackgroundUpload.js'
 import { uploadLandingBackground } from '../middleware/landingBackgroundUpload.js'
+import { uploadSessionHeaderBackground } from '../middleware/sessionHeaderBackgroundUpload.js'
 import { requireAdminGate } from '../middleware/requireAdminGate.js'
 import { deleteBanner, getResolvedBannerForRead, writeBannerPng } from '../utils/bannerStore.js'
 import {
@@ -10,9 +12,17 @@ import {
   writeExperienceLogo,
 } from '../utils/experienceLogoStore.js'
 import {
+  deleteEditorWorkspaceBackground,
+  writeEditorWorkspaceBackground,
+} from '../utils/editorWorkspaceBackgroundStore.js'
+import {
   deleteLandingBackground,
   writeLandingBackground,
 } from '../utils/landingBackgroundStore.js'
+import {
+  deleteSessionHeaderBackground,
+  writeSessionHeaderBackground,
+} from '../utils/sessionHeaderBackgroundStore.js'
 import { inferStoredExtFromUpload } from '../utils/contentImageConfig.js'
 import { getUploadDestinationSettings } from '../utils/publicConfig.js'
 import { readRuntimeConfigOverrides, writeRuntimeConfigOverrides } from '../utils/runtimeConfigStore.js'
@@ -102,6 +112,52 @@ export function createAdminRouter() {
 
   router.delete('/admin/landing-background', requireAdminGate, async (_req, res) => {
     await deleteLandingBackground()
+    res.json({ ok: true })
+  })
+
+  router.post('/admin/session-header-background', requireAdminGate, (req, res) => {
+    uploadSessionHeaderBackground(req, res, async (err) => {
+      if (err) return res.status(400).json({ error: err.message || String(err) })
+      const buf = req.file?.buffer
+      const m = req.file?.mimetype
+      if (!buf?.length || !m) {
+        return res.status(400).json({ error: 'Missing file field "sessionHeaderBackground".' })
+      }
+      try {
+        await writeSessionHeaderBackground(buf, inferStoredExtFromUpload(req.file))
+        return res.json({ ok: true })
+      } catch (e) {
+        console.error('session header background save:', e)
+        return res.status(500).json({ error: 'Could not save session header background.' })
+      }
+    })
+  })
+
+  router.delete('/admin/session-header-background', requireAdminGate, async (_req, res) => {
+    await deleteSessionHeaderBackground()
+    res.json({ ok: true })
+  })
+
+  router.post('/admin/editor-workspace-background', requireAdminGate, (req, res) => {
+    uploadEditorWorkspaceBackground(req, res, async (err) => {
+      if (err) return res.status(400).json({ error: err.message || String(err) })
+      const buf = req.file?.buffer
+      const m = req.file?.mimetype
+      if (!buf?.length || !m) {
+        return res.status(400).json({ error: 'Missing file field "editorWorkspaceBackground".' })
+      }
+      try {
+        await writeEditorWorkspaceBackground(buf, inferStoredExtFromUpload(req.file))
+        return res.json({ ok: true })
+      } catch (e) {
+        console.error('editor workspace background save:', e)
+        return res.status(500).json({ error: 'Could not save editor workspace background.' })
+      }
+    })
+  })
+
+  router.delete('/admin/editor-workspace-background', requireAdminGate, async (_req, res) => {
+    await deleteEditorWorkspaceBackground()
     res.json({ ok: true })
   })
 

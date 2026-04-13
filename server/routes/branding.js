@@ -1,6 +1,8 @@
 import { Router } from 'express'
+import { getResolvedEditorWorkspaceBackgroundForRead } from '../utils/editorWorkspaceBackgroundStore.js'
 import { getResolvedExperienceLogoForRead } from '../utils/experienceLogoStore.js'
 import { getResolvedLandingBackgroundForRead } from '../utils/landingBackgroundStore.js'
+import { getResolvedSessionHeaderBackgroundForRead } from '../utils/sessionHeaderBackgroundStore.js'
 
 export function createBrandingRouter() {
   const router = Router()
@@ -14,6 +16,32 @@ export function createBrandingRouter() {
       return res.sendFile(r.path)
     } catch (e) {
       console.error('landing background:', e)
+      return res.status(500).end()
+    }
+  })
+
+  router.get('/branding/session-header-background', async (_req, res) => {
+    try {
+      const r = await getResolvedSessionHeaderBackgroundForRead()
+      if (!r) return res.status(404).end()
+      res.setHeader('Cache-Control', 'public, max-age=120')
+      res.type(r.mime)
+      return res.sendFile(r.path)
+    } catch (e) {
+      console.error('session header background:', e)
+      return res.status(500).end()
+    }
+  })
+
+  router.get('/branding/editor-workspace-background', async (_req, res) => {
+    try {
+      const r = await getResolvedEditorWorkspaceBackgroundForRead()
+      if (!r) return res.status(404).end()
+      res.setHeader('Cache-Control', 'public, max-age=120')
+      res.type(r.mime)
+      return res.sendFile(r.path)
+    } catch (e) {
+      console.error('editor workspace background:', e)
       return res.status(500).end()
     }
   })

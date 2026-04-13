@@ -21,6 +21,7 @@ export function useMicrositeWorkflow() {
   const sdkRef = useRef(null)
   const launchedRef = useRef(false)
   const pickupBaseNameRef = useRef('')
+  const softTimerBannerClearRef = useRef(null)
 
   const [status, setStatus] = useState('loading')
   const [error, setError] = useState('')
@@ -83,11 +84,15 @@ export function useMicrositeWorkflow() {
     await resetForNextUser()
   }, [resetForNextUser])
 
-  const handleTimeUp = useCallback(async () => {
-    setBanner('')
-    setError('Session time is up. The editor will close for the next guest.')
-    await resetForNextUser()
-  }, [resetForNextUser])
+  useEffect(
+    () => () => {
+      if (softTimerBannerClearRef.current) {
+        clearTimeout(softTimerBannerClearRef.current)
+        softTimerBannerClearRef.current = null
+      }
+    },
+    []
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -123,24 +128,31 @@ export function useMicrositeWorkflow() {
   }, [])
 
   useEffect(() => {
-    if (!timerRunning || phase !== 'editing' || !showSessionTimer || sessionSeconds <= 0) return undefined
+    /* Need at least 2s so we can count 2→1 then soft-reset without stuck 1s loops. */
+    if (!timerRunning || phase !== 'editing' || !showSessionTimer || sessionSeconds < 2) return undefined
 
     const id = setInterval(() => {
       setRemaining((r) => {
-        if (r <= 0) return 0
+        if (r <= 0) return sessionSeconds
         if (r === 1) {
           queueMicrotask(() => {
-            setTimerRunning(false)
-            handleTimeUp()
+            if (softTimerBannerClearRef.current) {
+              clearTimeout(softTimerBannerClearRef.current)
+            }
+            setBanner('Session time refreshed — you can keep editing.')
+            softTimerBannerClearRef.current = setTimeout(() => {
+              softTimerBannerClearRef.current = null
+              setBanner('')
+            }, 5000)
           })
-          return 0
+          return sessionSeconds
         }
         return r - 1
       })
     }, 1000)
 
     return () => clearInterval(id)
-  }, [timerRunning, phase, handleTimeUp, showSessionTimer, sessionSeconds])
+  }, [timerRunning, phase, showSessionTimer, sessionSeconds])
 
   const launchEditor = useCallback(() => {
     const editor = editorRef.current
@@ -178,7 +190,7 @@ export function useMicrositeWorkflow() {
     setBanner('')
     setRemaining(sessionSeconds)
     setPhase('editing')
-    setTimerRunning(showSessionTimer && sessionSeconds > 0)
+    setTimerRunning(showSessionTimer && sessionSeconds >= 2)
 
     const runCreate = () => {
       const appConfig = {
