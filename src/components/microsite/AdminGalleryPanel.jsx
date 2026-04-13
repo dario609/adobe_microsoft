@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { apiFetch } from '../../api/apiFetch.js'
 import { apiUrl } from '../../api/apiBase.js'
 import { useRuntimeConfig } from '../../hooks/useRuntimeConfig.js'
-import { validateGalleryDraftLocal, normalizeGalleryTemplateId } from '../../utils/galleryDisplay.js'
+import { validateGalleryDraftLocal, sanitizeUserTemplateLink } from '../../utils/galleryDisplay.js'
 
 async function parseJson(res) {
   const ct = res.headers.get('content-type') || ''
@@ -123,7 +123,7 @@ export function AdminGalleryPanel() {
   const uploadOne = async (file) => {
     const fd = new FormData()
     fd.append('images', file)
-    const tid = normalizeGalleryTemplateId(uploadTemplateId)
+    const tid = sanitizeUserTemplateLink(uploadTemplateId)
     if (tid) fd.append('templateId', tid)
     const res = await apiFetch('/api/gallery', { method: 'POST', body: fd })
     const data = await parseJson(res)
@@ -157,9 +157,9 @@ export function AdminGalleryPanel() {
     const files = Array.from(e.target.files || [])
     e.target.value = ''
     if (!files.length) return
-    const tid = normalizeGalleryTemplateId(uploadTemplateId)
+    const tid = sanitizeUserTemplateLink(uploadTemplateId)
     if (!tid) {
-      setActionError('Enter the template or project ID above before uploading.')
+      setActionError('Paste the full Express template link (or template/project ID) before uploading.')
       return
     }
     setActionError('')
@@ -205,7 +205,7 @@ export function AdminGalleryPanel() {
     setActionError('')
     setBusy(true)
     try {
-      const tid = normalizeGalleryTemplateId(d.templateId)
+      const tid = sanitizeUserTemplateLink(d.templateId)
       const isBlank = (d.templateType || '') === 'blankCanvas'
       const body = JSON.stringify(
         isBlank
@@ -329,7 +329,7 @@ export function AdminGalleryPanel() {
               id="upload-template-id"
               className="adminGallery__textInput adminGallery__textInput--template adminGallery__textInput--toolbarTemplate"
               type="text"
-              placeholder="Adobe template URN, Express project link, or project UUID"
+              placeholder="Paste full Express share link (user/brand) or Adobe template URN"
               value={uploadTemplateId}
               onChange={(e) => setUploadTemplateId(e.target.value)}
               disabled={busy}
@@ -422,7 +422,7 @@ export function AdminGalleryPanel() {
                   fe.templateId ? ' adminGallery__textInput--invalid' : ''
                 }`}
                 type="text"
-                placeholder="Adobe URN, Express project URL, or project UUID"
+                placeholder="Full Express share link or Adobe template URN"
                 value={d.templateId}
                 onChange={(e) => {
                   setDraft(it.id, { templateId: e.target.value })

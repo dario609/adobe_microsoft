@@ -29,6 +29,18 @@ export function normalizeGalleryTemplateId(v) {
   return s.slice(0, 4096)
 }
 
+/** Full Express share / project URL for user templates (do not strip to URN). */
+export function sanitizeUserTemplateLink(v) {
+  return String(v ?? '').trim().slice(0, 4096)
+}
+
+export function galleryTemplateIdentityKey(templateId, templateType) {
+  const tt = String(templateType || 'adobeTemplate').trim() || 'adobeTemplate'
+  if (tt === 'blankCanvas') return ''
+  if (tt === 'userTemplate') return sanitizeUserTemplateLink(templateId)
+  return normalizeGalleryTemplateId(templateId)
+}
+
 export function galleryTemplateKey(v) {
   return normalizeGalleryTemplateId(v)
 }
@@ -41,7 +53,7 @@ const TT_BLANK = 'blankCanvas'
 export function validateGalleryDraftLocal(id, items, draft) {
   const display = galleryDisplayKey(draft.originalName)
   const tt = String(draft.templateType || 'adobeTemplate').trim() || 'adobeTemplate'
-  const tid = galleryTemplateKey(draft.templateId)
+  const tid = galleryTemplateIdentityKey(draft.templateId, tt)
   /** @type {Record<string, string>} */
   const errors = {}
 
@@ -55,7 +67,7 @@ export function validateGalleryDraftLocal(id, items, draft) {
       errors.canvasHeight = 'Height must be between 1 and 8192 px.'
     }
   } else if (!tid) {
-    errors.templateId = 'Template or project ID is required.'
+    errors.templateId = 'Paste the full template link or enter a template / project ID.'
   }
 
   for (const x of items) {
@@ -63,7 +75,8 @@ export function validateGalleryDraftLocal(id, items, draft) {
     if (!errors.originalName && galleryDisplayKey(x.originalName) === display) {
       errors.originalName = 'Display name must be unique across gallery items.'
     }
-    if (tt !== TT_BLANK && !errors.templateId && tid && galleryTemplateKey(x.templateId) === tid) {
+    const xTt = String(x.templateType || 'adobeTemplate').trim() || 'adobeTemplate'
+    if (tt !== TT_BLANK && !errors.templateId && tid && galleryTemplateIdentityKey(x.templateId, xTt) === tid) {
       errors.templateId = 'This template ID is already used by another item.'
     }
   }

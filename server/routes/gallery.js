@@ -9,7 +9,6 @@ import {
   getGalleryItem,
   listGalleryItems,
   normalizeGalleryTemplateType,
-  normalizeTemplateId,
   replaceGalleryPng,
   updateGalleryItem,
 } from '../utils/galleryStore.js'
@@ -78,7 +77,7 @@ export function createGalleryRouter() {
       const uploadType = trimmedTt === '' ? null : normalizeGalleryTemplateType(rawTt)
       const templateIdRaw = req.body?.templateId
       const templateId =
-        uploadType === 'blankCanvas' ? '' : normalizeTemplateId(templateIdRaw)
+        uploadType === 'blankCanvas' ? '' : String(templateIdRaw ?? '').trim().slice(0, 4096)
       if (uploadType !== 'blankCanvas' && !templateId) {
         return res.status(400).json({
           error: 'Template or project ID is required for Adobe and user / brand uploads.',

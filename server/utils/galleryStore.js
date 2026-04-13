@@ -22,15 +22,21 @@ async function readManifest() {
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
     return parsed.map((it) => {
-      const normalizedId = normalizeTemplateId(it.templateId)
-      const templateSource = parseTemplateSource(it.templateId || '')
-      const tt = it.templateType || templateSource.type
+      const isBlank = normalizeGalleryTemplateType(it.templateType) === 'blankCanvas'
+      const inferred = parseTemplateSource(it.templateId || '')
+      const tt = isBlank ? 'blankCanvas' : inferred.type
       const cw = parseInt(String(it.canvasWidth ?? ''), 10)
       const ch = parseInt(String(it.canvasHeight ?? ''), 10)
+      const storedTemplateId =
+        tt === 'blankCanvas'
+          ? ''
+          : tt === 'userTemplate'
+            ? sanitizeUserTemplateLink(it.templateId)
+            : normalizeTemplateId(it.templateId)
       return {
         ...it,
         fileExt: normalizeStoredExt(it.fileExt),
-        templateId: tt === 'blankCanvas' ? '' : normalizedId,
+        templateId: storedTemplateId,
         templateType: tt,
         canvasWidth: Number.isFinite(cw) && cw > 0 ? cw : 0,
         canvasHeight: Number.isFinite(ch) && ch > 0 ? ch : 0,
@@ -139,6 +145,19 @@ export function normalizeTemplateId(v) {
   return s.slice(0, 4096)
 }
 
+/** Keep full Express share / project URLs for `editor.edit` — do not reduce to URN-only. */
+export function sanitizeUserTemplateLink(v) {
+  const s = String(v ?? '').trim()
+  return s.slice(0, 4096)
+}
+
+function templateIdentityKey(templateId, templateType) {
+  const tt = normalizeGalleryTemplateType(templateType)
+  if (tt === 'blankCanvas') return ''
+  if (tt === 'userTemplate') return sanitizeUserTemplateLink(templateId)
+  return normalizeTemplateId(templateId)
+}
+
 /** @param {unknown} v */
 export function normalizeGalleryTemplateType(v) {
   const s = String(v ?? '').trim()
@@ -172,7 +191,7 @@ export function parseTemplateSource(v) {
   if (!s) return { type: 'adobeTemplate', id: '' }
 
   if (PROJECT_UUID_RE.test(s)) {
-    return { type: 'userTemplate', id: s }
+    return { type: 'userTemplate', id: sanitizeUserTemplateLink(s) }
   }
 
   const isUserTemplate =
@@ -183,7 +202,7 @@ export function parseTemplateSource(v) {
     EXPRESS_PROJECT_PATH.test(s) ||
     /\/project\/[a-z0-9-]+\/edit/i.test(s)
 
-  const id = normalizeTemplateId(s)
+  const id = isUserTemplate ? sanitizeUserTemplateLink(s) : normalizeTemplateId(s)
 
   return {
     type: isUserTemplate ? 'userTemplate' : 'adobeTemplate',
@@ -217,13 +236,14 @@ export function findGalleryConflict(items, excludeId, display, templateId, templ
     return null
   }
 
-  const tid = normalizeTemplateId(templateId)
+  const tid = templateIdentityKey(templateId, tt)
   for (const x of items) {
     if (excludeId != null && x.id === excludeId) continue
     if (displayKey(x.originalName) === display) {
       return { field: 'originalName', message: 'Display name must be unique across gallery items.' }
     }
-    if (tid && normalizeTemplateId(x.templateId) === tid) {
+    const xTt = normalizeGalleryTemplateType(x.templateType)
+    if (tid && templateIdentityKey(x.templateId, xTt) === tid) {
       return { field: 'templateId', message: 'This template ID is already used by another item.' }
     }
   }
@@ -281,7 +301,14 @@ export async function addGalleryPng(buffer, meta) {
     canvasHeight = h
     templateId = ''
   } else {
-    templateId = normalizeTemplateId(meta.templateId)
+    const raw = String(meta.templateId ?? '').trim()
+    if (!raw) {
+      const err = new Error('Template ID is required for Adobe and user / brand projects.')
+      err.code = 'GALLERY_VALIDATION'
+      throw err
+    }
+    templateId =
+      resolvedType === 'userTemplate' ? sanitizeUserTemplateLink(raw) : normalizeTemplateId(raw)
     if (!templateId) {
       const err = new Error('Template ID is required for Adobe and user / brand projects.')
       err.code = 'GALLERY_VALIDATION'
@@ -374,15 +401,17 @@ export async function updateGalleryItem(id, patch) {
     next.canvasHeight = h == null ? 0 : h
   }
   if (patch.templateId !== undefined) {
-    next.templateId = normalizeTemplateId(patch.templateId)
+    next.templateId = String(patch.templateId ?? '').trim().slice(0, 4096)
   }
   if (patch.originalName !== undefined) next.originalName = displayKey(patch.originalName)
 
-  const tid = normalizeTemplateId(next.templateId)
+  const rawTid = String(next.templateId || '').trim()
 
-  if (tid) {
-    next.templateId = tid
-    next.templateType = parseTemplateSource(tid).type
+  if (rawTid) {
+    const inferred = parseTemplateSource(rawTid)
+    next.templateType = inferred.type
+    next.templateId =
+      inferred.type === 'userTemplate' ? sanitizeUserTemplateLink(rawTid) : normalizeTemplateId(rawTid)
     next.canvasWidth = 0
     next.canvasHeight = 0
   } else if (normalizeGalleryTemplateType(next.templateType) === 'blankCanvas') {
@@ -426,7 +455,10 @@ export async function replaceGalleryPng(id, buffer, newExt) {
   const idx = items.findIndex((x) => x.id === id)
   if (idx < 0) return null
   const cur = items[idx]
-  if (normalizeGalleryTemplateType(cur.templateType) !== 'blankCanvas' && !normalizeTemplateId(cur.templateId)) {
+  if (
+    normalizeGalleryTemplateType(cur.templateType) !== 'blankCanvas' &&
+    !String(cur.templateId || '').trim()
+  ) {
     const err = new Error('Template ID is required for this item before replacing the image.')
     err.code = 'GALLERY_VALIDATION'
     throw err
