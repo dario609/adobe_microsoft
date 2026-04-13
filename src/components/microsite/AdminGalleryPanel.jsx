@@ -53,8 +53,11 @@ export function AdminGalleryPanel() {
   const [loadError, setLoadError] = useState('')
   const [actionError, setActionError] = useState('')
   const [uploadTemplateId, setUploadTemplateId] = useState('')
+  const [uploadTemplateType, setUploadTemplateType] = useState('adobeTemplate')
+  const [uploadCanvasW, setUploadCanvasW] = useState('1050')
+  const [uploadCanvasH, setUploadCanvasH] = useState('600')
   const [draftById, setDraftById] = useState({})
-  /** @type {Record<string, { originalName?: string; templateId?: string }>} */
+  /** @type {Record<string, Record<string, string>>} */
   const [fieldErrorsById, setFieldErrorsById] = useState({})
 
   const looksLikeGitHubToken = (s) => /^ghp_[a-zA-Z0-9]{20,}/i.test(String(s || '').trim())
@@ -76,6 +79,9 @@ export function AdminGalleryPanel() {
         next[it.id] = {
           templateId: it.templateId || '',
           originalName: it.originalName || '',
+          templateType: it.templateType || 'adobeTemplate',
+          canvasWidth: it.canvasWidth ? String(it.canvasWidth) : '',
+          canvasHeight: it.canvasHeight ? String(it.canvasHeight) : '',
         }
       }
       setDraftById(next)
@@ -121,8 +127,14 @@ export function AdminGalleryPanel() {
   const uploadOne = async (file) => {
     const fd = new FormData()
     fd.append('images', file)
-    const tid = normalizeGalleryTemplateId(uploadTemplateId)
-    if (tid) fd.append('templateId', tid)
+    fd.append('templateType', uploadTemplateType)
+    if (uploadTemplateType === 'blankCanvas') {
+      fd.append('canvasWidth', uploadCanvasW)
+      fd.append('canvasHeight', uploadCanvasH)
+    } else {
+      const tid = normalizeGalleryTemplateId(uploadTemplateId)
+      if (tid) fd.append('templateId', tid)
+    }
     const res = await apiFetch('/api/gallery', { method: 'POST', body: fd })
     const data = await parseJson(res)
     if (!res.ok) {
@@ -141,6 +153,9 @@ export function AdminGalleryPanel() {
           next[it.id] = {
             templateId: it.templateId || '',
             originalName: it.originalName || '',
+            templateType: it.templateType || 'adobeTemplate',
+            canvasWidth: it.canvasWidth ? String(it.canvasWidth) : '',
+            canvasHeight: it.canvasHeight ? String(it.canvasHeight) : '',
           }
         }
         return next
@@ -152,10 +167,19 @@ export function AdminGalleryPanel() {
     const files = Array.from(e.target.files || [])
     e.target.value = ''
     if (!files.length) return
-    const tid = normalizeGalleryTemplateId(uploadTemplateId)
-    if (!tid) {
-      setActionError('Enter the template ID above before uploading — it is required for every image.')
-      return
+    if (uploadTemplateType === 'blankCanvas') {
+      const w = parseInt(String(uploadCanvasW).trim(), 10)
+      const h = parseInt(String(uploadCanvasH).trim(), 10)
+      if (!Number.isFinite(w) || w < 1 || w > 8192 || !Number.isFinite(h) || h < 1 || h > 8192) {
+        setActionError('Blank canvas uploads need width and height between 1 and 8192 px.')
+        return
+      }
+    } else {
+      const tid = normalizeGalleryTemplateId(uploadTemplateId)
+      if (!tid) {
+        setActionError('Enter the template or project ID above before uploading.')
+        return
+      }
     }
     setActionError('')
     setBusy(true)
@@ -173,7 +197,7 @@ export function AdminGalleryPanel() {
   const saveMeta = async (id) => {
     const d = draftById[id]
     if (!d) return
-    if (looksLikeGitHubToken(d.templateId)) {
+    if (d.templateType !== 'blankCanvas' && looksLikeGitHubToken(d.templateId)) {
       setFieldErrorsById((prev) => ({
         ...prev,
         [id]: {
@@ -203,6 +227,9 @@ export function AdminGalleryPanel() {
       const body = JSON.stringify({
         templateId: normalizeGalleryTemplateId(d.templateId),
         originalName: d.originalName,
+        templateType: d.templateType || 'adobeTemplate',
+        canvasWidth: d.canvasWidth,
+        canvasHeight: d.canvasHeight,
       })
       let res = await apiFetch(`/api/gallery/${encodeURIComponent(id)}/meta`, {
         method: 'POST',
@@ -221,7 +248,7 @@ export function AdminGalleryPanel() {
       if (res.status === 409) {
         const field = data?.field
         const msg = typeof data?.error === 'string' ? data.error : 'This value is already in use.'
-        if (field === 'originalName' || field === 'templateId') {
+        if (field === 'originalName' || field === 'templateId' || field === 'canvasWidth' || field === 'canvasHeight') {
           setFieldErrorsById((prev) => ({ ...prev, [id]: { ...prev[id], [field]: msg } }))
         }
         setActionError(msg)
@@ -231,7 +258,13 @@ export function AdminGalleryPanel() {
       const it = data?.item
       if (it?.id) {
         setItems((prev) => prev.map((x) => (x.id === it.id ? { ...x, ...it } : x)))
-        setDraft(it.id, { templateId: it.templateId || '', originalName: it.originalName || '' })
+        setDraft(it.id, {
+          templateId: it.templateId || '',
+          originalName: it.originalName || '',
+          templateType: it.templateType || 'adobeTemplate',
+          canvasWidth: it.canvasWidth ? String(it.canvasWidth) : '',
+          canvasHeight: it.canvasHeight ? String(it.canvasHeight) : '',
+        })
       } else {
         await load()
       }
@@ -299,19 +332,70 @@ export function AdminGalleryPanel() {
       <div className="adminGallery__toolbar">
         <div className="adminGallery__toolbarRow adminGallery__toolbarRow--singleLine">
           <div className="adminGallery__field adminGallery__field--toolbar">
-            <label className="adminGallery__fieldLabel" htmlFor="upload-template-id">
-              Template ID (required)
+            <label className="adminGallery__fieldLabel" htmlFor="upload-start-mode">
+              Start mode
             </label>
-            <input
-              id="upload-template-id"
-              className="adminGallery__textInput adminGallery__textInput--template adminGallery__textInput--toolbarTemplate"
-              type="text"
-              placeholder="Adobe template URN or URL"
-              value={uploadTemplateId}
-              onChange={(e) => setUploadTemplateId(e.target.value)}
+            <select
+              id="upload-start-mode"
+              className="adminGallery__textInput"
+              value={uploadTemplateType}
+              onChange={(e) => setUploadTemplateType(e.target.value)}
               disabled={busy}
-            />
+            >
+              <option value="adobeTemplate">Adobe template</option>
+              <option value="userTemplate">User / brand project</option>
+              <option value="blankCanvas">Blank canvas (custom px)</option>
+            </select>
           </div>
+          {uploadTemplateType === 'blankCanvas' ? (
+            <>
+              <div className="adminGallery__field adminGallery__field--toolbar adminGallery__field--narrow">
+                <label className="adminGallery__fieldLabel" htmlFor="upload-canvas-w">
+                  Width (px)
+                </label>
+                <input
+                  id="upload-canvas-w"
+                  className="adminGallery__textInput"
+                  type="number"
+                  min={1}
+                  max={8192}
+                  value={uploadCanvasW}
+                  onChange={(e) => setUploadCanvasW(e.target.value)}
+                  disabled={busy}
+                />
+              </div>
+              <div className="adminGallery__field adminGallery__field--toolbar adminGallery__field--narrow">
+                <label className="adminGallery__fieldLabel" htmlFor="upload-canvas-h">
+                  Height (px)
+                </label>
+                <input
+                  id="upload-canvas-h"
+                  className="adminGallery__textInput"
+                  type="number"
+                  min={1}
+                  max={8192}
+                  value={uploadCanvasH}
+                  onChange={(e) => setUploadCanvasH(e.target.value)}
+                  disabled={busy}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="adminGallery__field adminGallery__field--toolbar">
+              <label className="adminGallery__fieldLabel" htmlFor="upload-template-id">
+                Template / project ID (required)
+              </label>
+              <input
+                id="upload-template-id"
+                className="adminGallery__textInput adminGallery__textInput--template adminGallery__textInput--toolbarTemplate"
+                type="text"
+                placeholder="Adobe URN, Express project URL, or userTemplate link"
+                value={uploadTemplateId}
+                onChange={(e) => setUploadTemplateId(e.target.value)}
+                disabled={busy}
+              />
+            </div>
+          )}
           <label className="btn btn--adminPrimary btn--small adminGallery__fileLabel">
             {busy ? 'Working…' : 'Upload files'}
             <input
@@ -349,8 +433,15 @@ export function AdminGalleryPanel() {
           <li className="adminGallery__empty">No images uploaded yet.</li>
         ) : null}
         {items.map((it) => {
-          const d = draftById[it.id] || { templateId: '', originalName: it.originalName || '' }
+          const d = draftById[it.id] || {
+            templateId: '',
+            originalName: it.originalName || '',
+            templateType: it.templateType || 'adobeTemplate',
+            canvasWidth: it.canvasWidth ? String(it.canvasWidth) : '',
+            canvasHeight: it.canvasHeight ? String(it.canvasHeight) : '',
+          }
           const fe = fieldErrorsById[it.id] || {}
+          const draftType = d.templateType || 'adobeTemplate'
           const ext = (it.fileExt || 'png').toLowerCase()
           const isPdf = ext === 'pdf'
           return (
@@ -385,30 +476,98 @@ export function AdminGalleryPanel() {
                   {fe.originalName}
                 </p>
               ) : null}
-              <label className="adminGallery__miniLabel" htmlFor={`tpl-${it.id}`}>
-                Template ID
+              <label className="adminGallery__miniLabel" htmlFor={`tt-${it.id}`}>
+                Start mode
               </label>
-              <input
-                id={`tpl-${it.id}`}
-                className={`adminGallery__textInput adminGallery__textInput--template${
-                  fe.templateId ? ' adminGallery__textInput--invalid' : ''
-                }`}
-                type="text"
-                placeholder="Required — Adobe template URN or URL"
-                value={d.templateId}
+              <select
+                id={`tt-${it.id}`}
+                className="adminGallery__textInput"
+                value={draftType}
                 onChange={(e) => {
-                  setDraft(it.id, { templateId: e.target.value })
+                  setDraft(it.id, { templateType: e.target.value })
                   clearFieldError(it.id, 'templateId')
+                  clearFieldError(it.id, 'canvasWidth')
+                  clearFieldError(it.id, 'canvasHeight')
                 }}
                 disabled={busy}
-                aria-invalid={Boolean(fe.templateId)}
-                aria-describedby={fe.templateId ? `tpl-err-${it.id}` : undefined}
-              />
-              {fe.templateId ? (
-                <p id={`tpl-err-${it.id}`} className="adminGallery__fieldError" role="alert">
-                  {fe.templateId}
-                </p>
-              ) : null}
+              >
+                <option value="adobeTemplate">Adobe template</option>
+                <option value="userTemplate">User / brand project</option>
+                <option value="blankCanvas">Blank canvas</option>
+              </select>
+              {draftType === 'blankCanvas' ? (
+                <>
+                  <label className="adminGallery__miniLabel" htmlFor={`cw-${it.id}`}>
+                    Width (px)
+                  </label>
+                  <input
+                    id={`cw-${it.id}`}
+                    className={`adminGallery__textInput${fe.canvasWidth ? ' adminGallery__textInput--invalid' : ''}`}
+                    type="number"
+                    min={1}
+                    max={8192}
+                    value={d.canvasWidth ?? ''}
+                    onChange={(e) => {
+                      setDraft(it.id, { canvasWidth: e.target.value })
+                      clearFieldError(it.id, 'canvasWidth')
+                    }}
+                    disabled={busy}
+                  />
+                  {fe.canvasWidth ? (
+                    <p className="adminGallery__fieldError" role="alert">
+                      {fe.canvasWidth}
+                    </p>
+                  ) : null}
+                  <label className="adminGallery__miniLabel" htmlFor={`ch-${it.id}`}>
+                    Height (px)
+                  </label>
+                  <input
+                    id={`ch-${it.id}`}
+                    className={`adminGallery__textInput${fe.canvasHeight ? ' adminGallery__textInput--invalid' : ''}`}
+                    type="number"
+                    min={1}
+                    max={8192}
+                    value={d.canvasHeight ?? ''}
+                    onChange={(e) => {
+                      setDraft(it.id, { canvasHeight: e.target.value })
+                      clearFieldError(it.id, 'canvasHeight')
+                    }}
+                    disabled={busy}
+                  />
+                  {fe.canvasHeight ? (
+                    <p className="adminGallery__fieldError" role="alert">
+                      {fe.canvasHeight}
+                    </p>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <label className="adminGallery__miniLabel" htmlFor={`tpl-${it.id}`}>
+                    Template / project ID
+                  </label>
+                  <input
+                    id={`tpl-${it.id}`}
+                    className={`adminGallery__textInput adminGallery__textInput--template${
+                      fe.templateId ? ' adminGallery__textInput--invalid' : ''
+                    }`}
+                    type="text"
+                    placeholder="Adobe URN, Express project URL, or userTemplate link"
+                    value={d.templateId}
+                    onChange={(e) => {
+                      setDraft(it.id, { templateId: e.target.value })
+                      clearFieldError(it.id, 'templateId')
+                    }}
+                    disabled={busy}
+                    aria-invalid={Boolean(fe.templateId)}
+                    aria-describedby={fe.templateId ? `tpl-err-${it.id}` : undefined}
+                  />
+                  {fe.templateId ? (
+                    <p id={`tpl-err-${it.id}`} className="adminGallery__fieldError" role="alert">
+                      {fe.templateId}
+                    </p>
+                  ) : null}
+                </>
+              )}
               <label className="btn btn--adminSoft btn--small adminGallery__fileLabel adminGallery__replacePng">
                 Replace image
                 <input

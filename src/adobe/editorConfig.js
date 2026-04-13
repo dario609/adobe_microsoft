@@ -52,13 +52,27 @@ export function getDocumentConfig(overrideTemplateId) {
   return { kind: 'blank', canvasSize: 'BusinessCard' }
 }
 
-/** @param {string} [overrideTemplateId] @param {string} [templateType] */
-export function openEditor(editor, appConfig, overrideTemplateId, templateType) {
-  const doc = getDocumentConfig(overrideTemplateId)
+/**
+ * @param {string} [overrideTemplateId]
+ * @param {string} [templateType] — `adobeTemplate` | `userTemplate` | `blankCanvas`
+ * @param {{ width: number, height: number }} [canvasPx] — pixel size when `templateType === 'blankCanvas'`
+ */
+export function openEditor(editor, appConfig, overrideTemplateId, templateType, canvasPx) {
   const container = getEditorContainerConfig()
 
+  if (templateType === 'blankCanvas' && canvasPx && canvasPx.width > 0 && canvasPx.height > 0) {
+    editor.create(
+      { canvasSize: { width: canvasPx.width, height: canvasPx.height, unit: 'px' } },
+      appConfig,
+      EXPORT_OPTIONS,
+      container
+    )
+    return
+  }
+
+  const doc = getDocumentConfig(overrideTemplateId)
+
   if (doc.kind === 'template') {
-    // User templates use edit() method; Adobe templates use createWithTemplate()
     if (templateType === 'userTemplate') {
       editor.edit({ documentId: doc.templateId }, appConfig, EXPORT_OPTIONS, container)
     } else {

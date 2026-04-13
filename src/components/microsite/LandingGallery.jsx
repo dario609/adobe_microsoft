@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { apiUrl } from '../../api/apiBase.js'
-import { getGalleryPickId, getGalleryTemplateId, setGalleryPickId } from '../../constants/gallerySelection.js'
+import {
+  getGalleryCanvasSize,
+  getGalleryPickId,
+  getGalleryTemplateId,
+  getGalleryTemplateType,
+  setGalleryPickId,
+} from '../../constants/gallerySelection.js'
 
 export function LandingGallery({ onSelectionChange }) {
   const [items, setItems] = useState([])
@@ -35,14 +41,35 @@ export function LandingGallery({ onSelectionChange }) {
     if (!it) return
     const tid = it.templateId || ''
     const fe = it.fileExt || 'png'
-    if (getGalleryPickId() === it.id && getGalleryTemplateId() === tid) return
-    setGalleryPickId(it.id, tid, it.templateType || '', fe)
+    const tt = it.templateType || 'adobeTemplate'
+    const cw = Number(it.canvasWidth) > 0 ? Number(it.canvasWidth) : 0
+    const ch = Number(it.canvasHeight) > 0 ? Number(it.canvasHeight) : 0
+    const curSize = getGalleryCanvasSize()
+    if (
+      getGalleryPickId() === it.id &&
+      getGalleryTemplateId() === tid &&
+      getGalleryTemplateType() === tt &&
+      curSize.width === cw &&
+      curSize.height === ch
+    ) {
+      return
+    }
+    setGalleryPickId(it.id, tid, tt, fe, cw, ch)
     onSelectionChange?.()
   }, [items, selectedId, onSelectionChange])
 
   const pick = (it) => {
     setSelectedId(it.id)
-    setGalleryPickId(it.id, it.templateId || '', it.templateType || '', it.fileExt || 'png')
+    const cw = Number(it.canvasWidth) > 0 ? Number(it.canvasWidth) : 0
+    const ch = Number(it.canvasHeight) > 0 ? Number(it.canvasHeight) : 0
+    setGalleryPickId(
+      it.id,
+      it.templateId || '',
+      it.templateType || 'adobeTemplate',
+      it.fileExt || 'png',
+      cw,
+      ch
+    )
     onSelectionChange?.()
   }
 
@@ -61,6 +88,7 @@ export function LandingGallery({ onSelectionChange }) {
             const src = apiUrl(`/api/gallery/image/${it.id}?v=${encodeURIComponent(it.uploadedAt || '')}`)
             const active = selectedId === it.id
             const isPdf = (it.fileExt || 'png').toLowerCase() === 'pdf'
+            const isBlank = (it.templateType || '') === 'blankCanvas'
             return (
               <li key={it.id} className="landGallery__tile">
                 <button
@@ -70,13 +98,20 @@ export function LandingGallery({ onSelectionChange }) {
                   aria-pressed={active}
                   aria-label={displayName(it)}
                 >
-                  {isPdf ? (
-                    <span className="landGallery__img landGallery__img--pdf" aria-hidden>
-                      PDF
-                    </span>
-                  ) : (
-                    <img className="landGallery__img" src={src} alt="" loading="lazy" />
-                  )}
+                  <span className="landGallery__thumbStack">
+                    {isPdf ? (
+                      <span className="landGallery__img landGallery__img--pdf" aria-hidden>
+                        PDF
+                      </span>
+                    ) : (
+                      <img className="landGallery__img" src={src} alt="" loading="lazy" />
+                    )}
+                    {isBlank ? (
+                      <span className="landGallery__blankBadge" aria-hidden>
+                        Blank {it.canvasWidth}×{it.canvasHeight}
+                      </span>
+                    ) : null}
+                  </span>
                 </button>
               </li>
             )

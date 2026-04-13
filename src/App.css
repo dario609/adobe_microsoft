@@ -467,6 +467,31 @@
   max-width: 140px;
 }
 
+.landGallery__thumbStack {
+  position: relative;
+  display: inline-block;
+}
+
+.landGallery__blankBadge {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  max-width: calc(100% - 8px);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.03em;
+  color: #fff;
+  background: rgba(37, 99, 235, 0.92);
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .landGallery__pick {
   display: flex;
   flex-direction: column;
@@ -948,6 +973,11 @@
   flex: 1 1 180px;
   min-width: 0;
   max-width: none;
+}
+
+.adminGallery__field--narrow {
+  flex: 0 0 104px;
+  max-width: 120px;
 }
 
 .adminGallery__textInput--toolbarTemplate {

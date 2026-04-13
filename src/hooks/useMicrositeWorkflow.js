@@ -6,7 +6,13 @@ import { ADOBE_TEMPLATE_ID, BRAND_NAME, REQUIRE_ADOBE_TEMPLATE } from '../consta
 import { useRuntimeConfig } from './useRuntimeConfig.js'
 import { blobFromAdobeExport, getPublishAssetPayload } from '../utils/adobeAsset.js'
 import { friendlyExportFailure } from '../utils/uploadErrors.js'
-import { clearGalleryPick, getGalleryPickId, getGalleryTemplateId, getGalleryTemplateType } from '../constants/gallerySelection.js'
+import {
+  clearGalleryPick,
+  getGalleryCanvasSize,
+  getGalleryPickId,
+  getGalleryTemplateId,
+  getGalleryTemplateType,
+} from '../constants/gallerySelection.js'
 import { buildPickupExportFilename } from '../utils/uploadFilename.js'
 
 export function useMicrositeWorkflow() {
@@ -142,11 +148,27 @@ export function useMicrositeWorkflow() {
 
     const galleryPick = getGalleryPickId().trim()
     const galleryTemplate = getGalleryTemplateId().trim()
-    if (!galleryPick || !galleryTemplate) {
+    const templateType = getGalleryTemplateType()
+    const canvas = getGalleryCanvasSize()
+
+    if (!galleryPick) {
       setError('Choose a template on the gallery before starting.')
       return
     }
-    if (REQUIRE_ADOBE_TEMPLATE && !ADOBE_TEMPLATE_ID && !galleryTemplate) {
+
+    if (templateType === 'blankCanvas') {
+      if (!canvas.width || !canvas.height) {
+        setError(
+          'This blank canvas tile is missing width or height. Ask an operator to set dimensions in the admin gallery.'
+        )
+        return
+      }
+    } else if (!galleryTemplate) {
+      setError('Choose a template on the gallery before starting.')
+      return
+    }
+
+    if (REQUIRE_ADOBE_TEMPLATE && !ADOBE_TEMPLATE_ID && !galleryTemplate && templateType !== 'blankCanvas') {
       setError('Choose a gallery image that has a template ID, or set VITE_ADOBE_TEMPLATE_ID in .env.')
       return
     }
@@ -217,8 +239,10 @@ export function useMicrositeWorkflow() {
 
       try {
         const templateOverride = galleryTemplate || ADOBE_TEMPLATE_ID
-        const templateType = getGalleryTemplateType()
-        openEditor(editor, appConfig, templateOverride, templateType)
+        if (templateType === 'blankCanvas') {
+          appConfig.selectedCategory = 'yourStuff'
+        }
+        openEditor(editor, appConfig, templateOverride, templateType, canvas)
       } catch (e) {
         launchedRef.current = false
         setPhase('landing')
@@ -233,11 +257,23 @@ export function useMicrositeWorkflow() {
     if (status !== 'ready' || launchedRef.current) return
     const galleryPick = getGalleryPickId().trim()
     const galleryTemplate = getGalleryTemplateId().trim()
-    if (!galleryPick || !galleryTemplate) {
+    const templateType = getGalleryTemplateType()
+    const canvas = getGalleryCanvasSize()
+
+    if (!galleryPick) {
       setError('Choose a template from the gallery before starting.')
       return
     }
-    if (REQUIRE_ADOBE_TEMPLATE && !ADOBE_TEMPLATE_ID && !galleryTemplate) {
+    if (templateType === 'blankCanvas') {
+      if (!canvas.width || !canvas.height) {
+        setError('This blank canvas option needs width and height set in admin.')
+        return
+      }
+    } else if (!galleryTemplate) {
+      setError('Choose a template from the gallery before starting.')
+      return
+    }
+    if (REQUIRE_ADOBE_TEMPLATE && !ADOBE_TEMPLATE_ID && !galleryTemplate && templateType !== 'blankCanvas') {
       setError('Choose a gallery image that has a template ID, or set VITE_ADOBE_TEMPLATE_ID in .env.')
       return
     }
@@ -264,8 +300,14 @@ export function useMicrositeWorkflow() {
 
   const galleryPick = typeof window !== 'undefined' ? getGalleryPickId().trim() : ''
   const galleryTemplate = typeof window !== 'undefined' ? getGalleryTemplateId().trim() : ''
-  const templateConfigured = Boolean(ADOBE_TEMPLATE_ID) || Boolean(galleryTemplate)
-  const hasLandingTemplateChoice = Boolean(galleryPick) && Boolean(galleryTemplate)
+  const galleryTemplateType = typeof window !== 'undefined' ? getGalleryTemplateType() : ''
+  const galleryCanvas =
+    typeof window !== 'undefined' ? getGalleryCanvasSize() : { width: 0, height: 0 }
+  const blankReady =
+    galleryTemplateType === 'blankCanvas' && galleryCanvas.width > 0 && galleryCanvas.height > 0
+  const templateConfigured = Boolean(ADOBE_TEMPLATE_ID) || Boolean(galleryTemplate) || blankReady
+  const hasLandingTemplateChoice =
+    Boolean(galleryPick) && (Boolean(galleryTemplate) || blankReady)
   const canStart =
     status === 'ready' &&
     hasLandingTemplateChoice &&

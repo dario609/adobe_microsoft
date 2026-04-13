@@ -24,11 +24,16 @@ async function readManifest() {
     return parsed.map((it) => {
       const normalizedId = normalizeTemplateId(it.templateId)
       const templateSource = parseTemplateSource(it.templateId || '')
+      const tt = it.templateType || templateSource.type
+      const cw = parseInt(String(it.canvasWidth ?? ''), 10)
+      const ch = parseInt(String(it.canvasHeight ?? ''), 10)
       return {
         ...it,
         fileExt: normalizeStoredExt(it.fileExt),
-        templateId: normalizedId,
-        templateType: it.templateType || templateSource.type, // Migrate existing items
+        templateId: tt === 'blankCanvas' ? '' : normalizedId,
+        templateType: tt,
+        canvasWidth: Number.isFinite(cw) && cw > 0 ? cw : 0,
+        canvasHeight: Number.isFinite(ch) && ch > 0 ? ch : 0,
       }
     })
   } catch {
@@ -134,6 +139,24 @@ export function normalizeTemplateId(v) {
   return s.slice(0, 4096)
 }
 
+/** @param {unknown} v */
+export function normalizeGalleryTemplateType(v) {
+  const s = String(v ?? '').trim()
+  if (s === 'userTemplate' || s === 'user') return 'userTemplate'
+  if (s === 'blankCanvas' || s === 'blank') return 'blankCanvas'
+  return 'adobeTemplate'
+}
+
+export const CANVAS_DIM_MIN = 1
+export const CANVAS_DIM_MAX = 8192
+
+/** @param {unknown} v @returns {number | null} */
+export function parseCanvasDimension(v) {
+  const n = parseInt(String(v ?? '').trim(), 10)
+  if (!Number.isFinite(n) || n < CANVAS_DIM_MIN || n > CANVAS_DIM_MAX) return null
+  return n
+}
+
 /**
  * @param {string} v
  * @returns {{ type: 'adobeTemplate' | 'userTemplate', id: string }}
@@ -143,15 +166,17 @@ export function parseTemplateSource(v) {
   const s = String(v).trim()
   if (!s) return { type: 'adobeTemplate', id: '' }
 
-  // Check BEFORE normalization - if the original string contains userTemplate indicator
-  const isUserTemplate = s.includes('/design/userTemplate/') || s.includes('userTemplate')
+  const isUserTemplate =
+    s.includes('/design/userTemplate/') ||
+    /\buserTemplate\b/i.test(s) ||
+    /express\.adobe\.com\/[^?\s]*\/project\//i.test(s) ||
+    /\/project\/[a-z0-9-]+\/edit/i.test(s)
 
-  // Extract the URN
   const id = normalizeTemplateId(s)
 
-  return { 
-    type: isUserTemplate ? 'userTemplate' : 'adobeTemplate', 
-    id 
+  return {
+    type: isUserTemplate ? 'userTemplate' : 'adobeTemplate',
+    id,
   }
 }
 
@@ -162,13 +187,25 @@ export function displayKey(name) {
 }
 
 /**
- * @param {Array<{ id: string, originalName?: string, templateId?: string }>} items
+ * @param {Array<{ id: string, originalName?: string, templateId?: string, templateType?: string }>} items
  * @param {string | null} excludeId — skip this id (current item when updating)
  * @param {string} display
  * @param {string} templateId — normalized
- * @returns {{ field: 'originalName' | 'templateId', message: string } | null}
+ * @param {string} [templateType]
+ * @returns {{ field: string, message: string } | null}
  */
-export function findGalleryConflict(items, excludeId, display, templateId) {
+export function findGalleryConflict(items, excludeId, display, templateId, templateType = 'adobeTemplate') {
+  const tt = normalizeGalleryTemplateType(templateType)
+  if (tt === 'blankCanvas') {
+    for (const x of items) {
+      if (excludeId != null && x.id === excludeId) continue
+      if (displayKey(x.originalName) === display) {
+        return { field: 'originalName', message: 'Display name must be unique across gallery items.' }
+      }
+    }
+    return null
+  }
+
   const tid = normalizeTemplateId(templateId)
   for (const x of items) {
     if (excludeId != null && x.id === excludeId) continue
@@ -186,7 +223,18 @@ export async function listGalleryItems() {
   return readManifest()
 }
 
-/** @param {Buffer} buffer @param {{ originalName: string, bytes: number, templateId?: string, fileExt: string }} meta */
+/**
+ * @param {Buffer} buffer
+ * @param {{
+ *   originalName: string
+ *   bytes: number
+ *   templateId?: string
+ *   fileExt: string
+ *   templateType?: string
+ *   canvasWidth?: unknown
+ *   canvasHeight?: unknown
+ * }} meta
+ */
 export async function addGalleryPng(buffer, meta) {
   await ensureDir()
   const id = crypto.randomUUID()
@@ -194,14 +242,53 @@ export async function addGalleryPng(buffer, meta) {
   const p = getGalleryBlobPath(id, ext)
   if (!p) throw new Error('Invalid id')
   const originalName = displayKey(meta.originalName ?? 'image.png')
-  const templateSource = parseTemplateSource(meta.templateId)
-  if (!templateSource.id) {
-    const err = new Error('Template ID is required.')
-    err.code = 'GALLERY_VALIDATION'
-    throw err
+
+  const explicitType =
+    meta.templateType != null && String(meta.templateType).trim() !== ''
+      ? normalizeGalleryTemplateType(meta.templateType)
+      : null
+  const inferred = parseTemplateSource(meta.templateId)
+  let resolvedType = 'adobeTemplate'
+  if (explicitType === 'blankCanvas') {
+    resolvedType = 'blankCanvas'
+  } else if (explicitType === 'userTemplate' || explicitType === 'adobeTemplate') {
+    resolvedType = explicitType
+  } else {
+    resolvedType = inferred.type
   }
+
+  let templateId = ''
+  let canvasWidth = 0
+  let canvasHeight = 0
+
+  if (resolvedType === 'blankCanvas') {
+    const w = parseCanvasDimension(meta.canvasWidth)
+    const h = parseCanvasDimension(meta.canvasHeight)
+    if (w == null || h == null) {
+      const err = new Error('Blank canvas requires width and height between 1 and 8192 px.')
+      err.code = 'GALLERY_VALIDATION'
+      throw err
+    }
+    canvasWidth = w
+    canvasHeight = h
+    templateId = ''
+  } else {
+    templateId = normalizeTemplateId(meta.templateId)
+    if (!templateId) {
+      const err = new Error('Template ID is required for Adobe and user / brand projects.')
+      err.code = 'GALLERY_VALIDATION'
+      throw err
+    }
+  }
+
   const items = await readManifest()
-  const conflict = findGalleryConflict(items, null, originalName, templateSource.id)
+  const conflict = findGalleryConflict(
+    items,
+    null,
+    originalName,
+    resolvedType === 'blankCanvas' ? '' : templateId,
+    resolvedType
+  )
   if (conflict) {
     const err = new Error(conflict.message)
     err.code = 'GALLERY_CONFLICT'
@@ -214,8 +301,15 @@ export async function addGalleryPng(buffer, meta) {
     originalName,
     bytes: meta.bytes,
     uploadedAt: new Date().toISOString(),
-    templateId: templateSource.id,
-    templateType: templateSource.type,
+    templateId,
+    templateType:
+      resolvedType === 'blankCanvas'
+        ? 'blankCanvas'
+        : resolvedType === 'userTemplate'
+          ? 'userTemplate'
+          : 'adobeTemplate',
+    canvasWidth,
+    canvasHeight,
     fileExt: ext,
   }
   items.unshift(entry)
@@ -243,31 +337,73 @@ export async function getGalleryItem(id) {
   return items.find((x) => x.id === id) || null
 }
 
-/** @param {string} id @param {{ templateId?: string, originalName?: string }} patch */
+/**
+ * @param {string} id
+ * @param {{
+ *   templateId?: string
+ *   originalName?: string
+ *   templateType?: string
+ *   canvasWidth?: unknown
+ *   canvasHeight?: unknown
+ * }} patch
+ */
 export async function updateGalleryItem(id, patch) {
   const items = await readManifest()
   const idx = items.findIndex((x) => x.id === id)
   if (idx < 0) return null
   const cur = items[idx]
   const next = { ...cur }
+
+  if (patch.templateType !== undefined) {
+    next.templateType = normalizeGalleryTemplateType(patch.templateType)
+  }
+  if (patch.canvasWidth !== undefined) {
+    const w = parseCanvasDimension(patch.canvasWidth)
+    next.canvasWidth = w == null ? 0 : w
+  }
+  if (patch.canvasHeight !== undefined) {
+    const h = parseCanvasDimension(patch.canvasHeight)
+    next.canvasHeight = h == null ? 0 : h
+  }
   if (patch.templateId !== undefined) {
-    const templateSource = parseTemplateSource(patch.templateId)
-    if (!templateSource.id) {
-      const err = new Error('Template ID is required.')
+    next.templateId = normalizeTemplateId(patch.templateId)
+  }
+  if (patch.originalName !== undefined) next.originalName = displayKey(patch.originalName)
+
+  const tt = normalizeGalleryTemplateType(next.templateType)
+
+  if (tt === 'blankCanvas') {
+    const w = parseCanvasDimension(next.canvasWidth)
+    const h = parseCanvasDimension(next.canvasHeight)
+    if (w == null || h == null) {
+      const err = new Error('Blank canvas requires width and height between 1 and 8192 px.')
       err.code = 'GALLERY_VALIDATION'
       throw err
     }
-    next.templateId = templateSource.id
-    next.templateType = templateSource.type
+    next.canvasWidth = w
+    next.canvasHeight = h
+    next.templateId = ''
+    next.templateType = 'blankCanvas'
+  } else {
+    const tid = normalizeTemplateId(next.templateId)
+    if (!tid) {
+      const err = new Error('Template or project ID is required.')
+      err.code = 'GALLERY_VALIDATION'
+      throw err
+    }
+    next.templateId = tid
+    next.templateType = tt === 'userTemplate' ? 'userTemplate' : 'adobeTemplate'
+    next.canvasWidth = 0
+    next.canvasHeight = 0
   }
-  if (patch.originalName !== undefined) next.originalName = displayKey(patch.originalName)
-  const effectiveTid = normalizeTemplateId(next.templateId)
-  if (!effectiveTid) {
-    const err = new Error('Template ID is required.')
-    err.code = 'GALLERY_VALIDATION'
-    throw err
-  }
-  const conflict = findGalleryConflict(items, id, displayKey(next.originalName), next.templateId)
+
+  const conflict = findGalleryConflict(
+    items,
+    id,
+    displayKey(next.originalName),
+    next.templateType === 'blankCanvas' ? '' : next.templateId,
+    next.templateType
+  )
   if (conflict) {
     const err = new Error(conflict.message)
     err.code = 'GALLERY_CONFLICT'
@@ -284,7 +420,7 @@ export async function replaceGalleryPng(id, buffer, newExt) {
   const idx = items.findIndex((x) => x.id === id)
   if (idx < 0) return null
   const cur = items[idx]
-  if (!normalizeTemplateId(cur.templateId)) {
+  if (normalizeGalleryTemplateType(cur.templateType) !== 'blankCanvas' && !normalizeTemplateId(cur.templateId)) {
     const err = new Error('Template ID is required for this item before replacing the image.')
     err.code = 'GALLERY_VALIDATION'
     throw err

@@ -8,12 +8,14 @@ import {
   getGalleryBlobPath,
   getGalleryItem,
   listGalleryItems,
+  normalizeGalleryTemplateType,
   normalizeTemplateId,
   replaceGalleryPng,
   updateGalleryItem,
 } from '../utils/galleryStore.js'
 
 function mapItem(it) {
+  const tt = normalizeGalleryTemplateType(it.templateType)
   return {
     id: it.id,
     originalName: it.originalName,
@@ -21,7 +23,9 @@ function mapItem(it) {
     uploadedAt: it.uploadedAt,
     templateId: it.templateId || '',
     fileExt: it.fileExt || 'png',
-    templateType: it.templateType || 'adobeTemplate',
+    templateType: tt,
+    canvasWidth: Number(it.canvasWidth) > 0 ? Number(it.canvasWidth) : 0,
+    canvasHeight: Number(it.canvasHeight) > 0 ? Number(it.canvasHeight) : 0,
   }
 }
 
@@ -69,10 +73,13 @@ export function createGalleryRouter() {
       if (!Array.isArray(files) || files.length === 0) {
         return res.status(400).json({ error: 'No image files uploaded (use field name "images").' })
       }
-      const templateId = normalizeTemplateId(req.body?.templateId)
-      if (!templateId) {
+      const uploadType = normalizeGalleryTemplateType(req.body?.templateType)
+      const templateIdRaw = req.body?.templateId
+      const templateId =
+        uploadType === 'blankCanvas' ? '' : normalizeTemplateId(templateIdRaw)
+      if (uploadType !== 'blankCanvas' && !templateId) {
         return res.status(400).json({
-          error: 'Template ID is required for gallery uploads.',
+          error: 'Template or project ID is required for Adobe and user / brand uploads.',
           code: 'TEMPLATE_ID_REQUIRED',
         })
       }
@@ -84,7 +91,10 @@ export function createGalleryRouter() {
           const entry = await addGalleryPng(buf, {
             originalName: f.originalname || 'image.png',
             bytes: buf.length,
-            templateId,
+            templateId: uploadType === 'blankCanvas' ? '' : templateId,
+            templateType: uploadType,
+            canvasWidth: req.body?.canvasWidth,
+            canvasHeight: req.body?.canvasHeight,
             fileExt: inferStoredExtFromUpload(f),
           })
           added.push(entry)
@@ -105,10 +115,13 @@ export function createGalleryRouter() {
 
   async function handleGalleryMetaUpdate(req, res) {
     try {
-      const { templateId, originalName } = req.body || {}
+      const { templateId, originalName, templateType, canvasWidth, canvasHeight } = req.body || {}
       const patch = {}
       if (templateId !== undefined) patch.templateId = templateId
       if (originalName !== undefined) patch.originalName = originalName
+      if (templateType !== undefined) patch.templateType = templateType
+      if (canvasWidth !== undefined) patch.canvasWidth = canvasWidth
+      if (canvasHeight !== undefined) patch.canvasHeight = canvasHeight
       const updated = await updateGalleryItem(req.params.id, patch)
       if (!updated) return res.status(404).json({ error: 'Not found.' })
       return res.json({ ok: true, item: mapItem(updated) })
