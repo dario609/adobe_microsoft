@@ -21,7 +21,12 @@ export function getRandomPlaceholderImageUrl() {
   return PLACEHOLDER_IMAGE_URLS[Math.floor(Math.random() * PLACEHOLDER_IMAGE_URLS.length)]
 }
 
-async function fetchImageAsBase64(url) {
+/**
+ * Returns a full `data:image/...;base64,...` string. The Express SDK validates images by
+ * assigning `asset.data` to `Image.src`, which requires a data URL — raw base64 only triggers
+ * INVALID_ASSET_TYPE (“does not contain array of images/videos”).
+ */
+async function fetchImageAsDataUrl(url) {
   const res = await fetch(url, { mode: 'cors' })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const blob = await res.blob()
@@ -29,8 +34,11 @@ async function fetchImageAsBase64(url) {
     const reader = new FileReader()
     reader.onloadend = () => {
       const dataUrl = String(reader.result || '')
-      const i = dataUrl.indexOf(',')
-      resolve(i >= 0 ? dataUrl.slice(i + 1) : dataUrl)
+      if (!dataUrl.startsWith('data:')) {
+        reject(new Error('expected data URL from FileReader'))
+        return
+      }
+      resolve(dataUrl)
     }
     reader.onerror = () => reject(new Error('read failed'))
     reader.readAsDataURL(blob)
@@ -47,18 +55,18 @@ export async function openBlankWithRandomTestAsset(editor, appConfig) {
   const ac = { ...appConfig, selectedCategory: 'yourStuff' }
   const canvasSize = { width: FALLBACK_W, height: FALLBACK_H, unit: 'px' }
 
-  let base64 = ''
+  let dataUrl = ''
   try {
-    base64 = await fetchImageAsBase64(getRandomPlaceholderImageUrl())
+    dataUrl = await fetchImageAsDataUrl(getRandomPlaceholderImageUrl())
   } catch (e) {
     console.warn('[userTemplate fallback] Placeholder image fetch failed, using empty canvas.', e)
   }
 
-  if (base64 && typeof editor.createWithAsset === 'function') {
+  if (dataUrl && typeof editor.createWithAsset === 'function') {
     editor.createWithAsset(
       {
         canvasSize,
-        asset: { data: base64, dataType: 'base64', type: 'image' },
+        asset: { data: dataUrl, dataType: 'base64', type: 'image' },
       },
       ac,
       EXPORT_OPTIONS,
