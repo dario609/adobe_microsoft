@@ -14,6 +14,11 @@ import {
   getGalleryTemplateType,
 } from '../constants/gallerySelection.js'
 import { buildPickupExportFilename } from '../utils/uploadFilename.js'
+import {
+  armUserTemplateLoadWatchdog,
+  openBlankWithRandomTestAsset,
+  USER_TEMPLATE_FALLBACK_MS,
+} from '../utils/userTemplateFallback.js'
 
 export function useMicrositeWorkflow() {
   const { sessionSeconds, showSessionTimer, submissionThankYouMessage } = useRuntimeConfig()
@@ -22,6 +27,9 @@ export function useMicrositeWorkflow() {
   const launchedRef = useRef(false)
   const pickupBaseNameRef = useRef('')
   const softTimerBannerClearRef = useRef(null)
+  const userTemplateFallbackRanRef = useRef(false)
+  const userTemplateWatchdogActiveRef = useRef(false)
+  const userTemplateWatchdogDisarmRef = useRef(null)
 
   const [status, setStatus] = useState('loading')
   const [error, setError] = useState('')
@@ -40,6 +48,12 @@ export function useMicrositeWorkflow() {
   }, [sessionSeconds])
 
   const resetForNextUser = useCallback(async () => {
+    if (userTemplateWatchdogDisarmRef.current) {
+      userTemplateWatchdogDisarmRef.current()
+      userTemplateWatchdogDisarmRef.current = null
+    }
+    userTemplateWatchdogActiveRef.current = false
+    userTemplateFallbackRanRef.current = false
     clearGalleryPick()
     setShowLeaveConfirm(false)
     setShowSubmissionThanks(false)
@@ -128,6 +142,14 @@ export function useMicrositeWorkflow() {
   }, [])
 
   useEffect(() => {
+    if (phase !== 'editing' && userTemplateWatchdogDisarmRef.current) {
+      userTemplateWatchdogDisarmRef.current()
+      userTemplateWatchdogDisarmRef.current = null
+      userTemplateWatchdogActiveRef.current = false
+    }
+  }, [phase])
+
+  useEffect(() => {
     /* Need at least 2s so we can count 2→1 then soft-reset without stuck 1s loops. */
     if (!timerRunning || phase !== 'editing' || !showSessionTimer || sessionSeconds < 2) return undefined
 
@@ -193,6 +215,61 @@ export function useMicrositeWorkflow() {
     setTimerRunning(showSessionTimer && sessionSeconds >= 2)
 
     const runCreate = () => {
+      if (userTemplateWatchdogDisarmRef.current) {
+        userTemplateWatchdogDisarmRef.current()
+        userTemplateWatchdogDisarmRef.current = null
+      }
+      userTemplateFallbackRanRef.current = false
+      userTemplateWatchdogActiveRef.current = false
+
+      const showEditorFailure = (err) => {
+        console.error('Editor error:', err)
+        const detail =
+          err?.message ||
+          err?.error?.message ||
+          err?.reason ||
+          (typeof err === 'string' ? err : '')
+        const short = String(detail).slice(0, 220)
+        setError(
+          short
+            ? `${short} If this persists, refresh the page or confirm this site is in your Adobe API “allowed domains”.`
+            : 'The editor hit a problem. Try refreshing the page or starting again.'
+        )
+      }
+
+      async function runUserTemplateFallback(reason) {
+        if (userTemplateFallbackRanRef.current) return
+        userTemplateFallbackRanRef.current = true
+        userTemplateWatchdogActiveRef.current = false
+        if (userTemplateWatchdogDisarmRef.current) {
+          userTemplateWatchdogDisarmRef.current()
+          userTemplateWatchdogDisarmRef.current = null
+        }
+        console.warn('[userTemplate] Fallback to blank + test asset:', reason)
+        setError('')
+        try {
+          const sdk = sdkRef.current
+          if (sdk?.close) {
+            await Promise.resolve(sdk.close(false)).catch((e) => console.warn('Adobe close:', e))
+          }
+          const host = document.getElementById('express-editor')
+          if (host) host.innerHTML = ''
+          await new Promise((r) => setTimeout(r, 150))
+          const ed = editorRef.current
+          if (!ed) throw new Error('Editor unavailable.')
+          await openBlankWithRandomTestAsset(ed, appConfig)
+          setBanner(
+            'Your template could not be opened in time, so we started a blank design with a sample image you can replace.'
+          )
+        } catch (e) {
+          console.error('[userTemplate] Fallback failed:', e)
+          setError(
+            e?.message ||
+              'Could not open a fallback editor. Try again, refresh the page, or pick another template.'
+          )
+        }
+      }
+
       const appConfig = {
         callbacks: {
           onCancel: async () => {
@@ -233,18 +310,15 @@ export function useMicrositeWorkflow() {
             }
           },
           onError: (err) => {
-            console.error('Editor error:', err)
-            const detail =
-              err?.message ||
-              err?.error?.message ||
-              err?.reason ||
-              (typeof err === 'string' ? err : '')
-            const short = String(detail).slice(0, 220)
-            setError(
-              short
-                ? `${short} If this persists, refresh the page or confirm this site is in your Adobe API “allowed domains”.`
-                : 'The editor hit a problem. Try refreshing the page or starting again.'
-            )
+            if (
+              templateType === 'userTemplate' &&
+              userTemplateWatchdogActiveRef.current &&
+              !userTemplateFallbackRanRef.current
+            ) {
+              void runUserTemplateFallback('sdk-error')
+              return
+            }
+            showEditorFailure(err)
           },
         },
       }
@@ -254,8 +328,25 @@ export function useMicrositeWorkflow() {
         if (templateType === 'blankCanvas') {
           appConfig.selectedCategory = 'yourStuff'
         }
+        if (templateType === 'userTemplate') {
+          userTemplateWatchdogActiveRef.current = true
+          userTemplateWatchdogDisarmRef.current = armUserTemplateLoadWatchdog({
+            timeoutMs: USER_TEMPLATE_FALLBACK_MS,
+            onTimeout: () => {
+              void runUserTemplateFallback('timeout')
+            },
+            onDisarm: () => {
+              userTemplateWatchdogActiveRef.current = false
+            },
+          })
+        }
         openEditor(editor, appConfig, templateOverride, templateType, canvas)
       } catch (e) {
+        if (userTemplateWatchdogDisarmRef.current) {
+          userTemplateWatchdogDisarmRef.current()
+          userTemplateWatchdogDisarmRef.current = null
+        }
+        userTemplateWatchdogActiveRef.current = false
         launchedRef.current = false
         setPhase('landing')
         setError(e?.message || String(e))
