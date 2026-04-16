@@ -1,0 +1,155 @@
+/* Blank Mode Landing Styles */
+
+.blankModeLanding {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 2rem 1rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+}
+
+.blankModeLanding__container {
+  max-width: 600px;
+  width: 100%;
+  background: white;
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.blankModeLanding__hero {
+  margin-bottom: 2rem;
+}
+
+.blankModeLanding__title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.5px;
+}
+
+.blankModeLanding__subtitle {
+  font-size: 1rem;
+  color: #666;
+  margin: 0;
+  font-weight: 400;
+}
+
+.blankModeLanding__error {
+  background-color: #fee;
+  border: 1px solid #fcc;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 2rem;
+}
+
+.blankModeLanding__error p {
+  color: #c33;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.blankModeLanding__actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.blankModeLanding__assetImport {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #eee;
+}
+
+.assetImport__section {
+  margin-bottom: 1.5rem;
+}
+
+.assetImport__label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.assetImport__inputGroup {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.assetImport__input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.assetImport__input:focus {
+  outline: none;
+  border-color: #0078d4;
+  box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.1);
+}
+
+.assetImport__error {
+  color: #c33;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  text-align: left;
+}
+
+.assetImport__divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  color: #999;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.assetImport__divider::before,
+.assetImport__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: #ddd;
+}
+
+.blankModeLanding__status {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 1rem 0 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .blankModeLanding__container {
+    padding: 2rem 1.5rem;
+  }
+
+  .blankModeLanding__title {
+    font-size: 1.5rem;
+  }
+
+  .blankModeLanding__actions {
+    flex-direction: column;
+  }
+
+  .blankModeLanding__actions button {
+    width: 100%;
+  }
+
+  .assetImport__inputGroup {
+    flex-direction: column;
+  }
+}

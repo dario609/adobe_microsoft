@@ -1,4 +1,4 @@
-# Adobe Express Microsite (Frontend + Backend)
+# Kiosk for Adobe Express (Frontend + Backend)
 
 This repo contains:
 

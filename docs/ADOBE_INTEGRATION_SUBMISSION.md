@@ -1,7 +1,7 @@
 # Adobe Express Embed — Integration submission
 
 **Document purpose:** Production URL, access model, and operator instructions for Adobe review.  
-**Product:** Adobe Express microsite (Express-Kiosk) — React frontend + Node/Express backend.  
+**Product:** Kiosk for Adobe Express — React frontend + Node/Express backend.  
 **Date:** April 3, 2026  
 **Version:** As deployed from repository `adobe-microsite`
 
